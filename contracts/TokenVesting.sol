@@ -1,10 +1,17 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IFoT {
+interface Token {
     function mint(address to, uint256 value) external;
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external;
 }
 
 contract TokenVesting {
@@ -17,7 +24,7 @@ contract TokenVesting {
 
     mapping(address => Claim) public claims;
     uint256 public start;
-    IFoT public token;
+    Token public token;
     address public treasury;
     address public presale;
 
@@ -48,7 +55,7 @@ contract TokenVesting {
         presale = _presale;
         treasury = _treasury;
         start = _start;
-        token = IFoT(_token);
+        token = Token(_token);
     }
 
     function submit(
@@ -91,6 +98,10 @@ contract TokenVesting {
         uint256 remainingAmount = claims[msg.sender].remainingAmount;
         token.mint(treasury, remainingAmount);
         delete claims[msg.sender];
+    }
+
+    function deposit(uint256 _amount) public onlyTreasury {
+        token.transferFrom(treasury, address(this), _amount);
     }
 
     function updateTreasury(address _treasury) public onlyTreasury {
