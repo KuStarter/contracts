@@ -1,5 +1,6 @@
 # KuStarter $KUST 🚀
-<img src="logo.png" alt="KuStarter" height="200px">  
+[<img src="logo.png" alt="KuStarter" height="200px">](http://kustarter.com)
+  
 
 A new and innovative launchpad for projects on the [KuCoin Community Chain](kcc.io).
 
