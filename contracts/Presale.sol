@@ -70,7 +70,7 @@ contract Presale is Ownable, Pausable {
         );
 
         uint256 tokenAmount = msg.value * tokensPerKcs;
-        vesting.submit(msg.sender, block.timestamp + 12 weeks, tokenAmount);
+        vesting.submit(msg.sender, block.timestamp + 12 weeks, tokenAmount, 0);
         totalDepositedEthBalance = totalDepositedEthBalance + (msg.value);
         deposits[msg.sender] = deposits[msg.sender] + (msg.value);
         emit Deposited(msg.sender, msg.value);
