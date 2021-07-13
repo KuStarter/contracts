@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.2;
 
 import "./interfaces/IVesting.sol";
 
@@ -10,16 +10,12 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 
 import "hardhat/console.sol";
 
-interface IFoT {
-    function approve(address spender, uint256 amount) external returns (bool);
-
-}
-
 contract Presale is Ownable, Pausable {
     event Deposited(address indexed user, uint256 amount);
     event Recovered(address token, uint256 amount);
 
     bool public seedSale = true;
+    bool public initialized = false;
     IVesting public vesting;
     address payable public liquidity;
 
@@ -39,7 +35,7 @@ contract Presale is Ownable, Pausable {
     mapping(address => uint256) public deposits;
 
     constructor(address payable _liquidity, uint256 _tokensPerKcs, uint256 _hardCapKcs, uint256 _minimumDepositKcsAmount, uint256 _maximumDepositKcsAmount) {
-        uniswap = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+        uniswap = IUniswapV2Router02(0xc0fFee0000C824D24E0F280f1e4D21152625742b); // TODO: Choose KCC DEX, using KoffeSwap for now
         liquidity = _liquidity;
         tokensPerKcs = _tokensPerKcs;
         hardCapEthAmount = _hardCapKcs;
@@ -49,7 +45,9 @@ contract Presale is Ownable, Pausable {
     }
 
     function initialize(address _vesting) public onlyOwner {
+        require(!initialized, "Already initialized");
         vesting = IVesting(_vesting);
+        initialized = true;
     }
 
     function addPrivateAllocations(address[] memory _addresses, uint256[] memory _ends, uint256[] memory _amounts, uint256[] memory _initials) public onlyOwner {

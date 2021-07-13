@@ -1,11 +1,9 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.2;
 
 import "./interfaces/IVesting.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "hardhat/console.sol";
 
 contract TokenVesting is IVesting {
     struct Claim {
