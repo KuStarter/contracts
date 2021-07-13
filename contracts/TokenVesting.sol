@@ -9,10 +9,9 @@ import "hardhat/console.sol";
 
 contract TokenVesting is IVesting {
     struct Claim {
-        uint256 end;
+        uint256 duration;
         uint256 amount;
-        uint256 remainingAmount;
-        uint256 amountPerSecond;
+        uint256 claimedAmount;
     }
 
     mapping(address => Claim) public claims;
@@ -57,14 +56,14 @@ contract TokenVesting is IVesting {
         uint256 _amount,
         uint256 _initialPercentage
     ) public override onlyPresale returns (bool) {
+        require(_initialPercentage >= 0 && _initialPercentage <= 99, "_initialPercentage must be a number between 0 and 99");
         uint256 initialDistribution = (_amount * _initialPercentage) / 100;
         uint256 vestedDistribution = _amount - initialDistribution;
         bool result = token.transfer(_receiver, initialDistribution);
         claims[_receiver] = Claim(
-            _end,
+            (_end - start),
             vestedDistribution,
-            vestedDistribution,
-            vestedDistribution / (_end - start)
+            0
         );
         return result;
     }
@@ -95,14 +94,14 @@ contract TokenVesting is IVesting {
 
     function claimTokens(uint256 _amount) public onlyContributor returns (bool) {
         require(_amount <= getAvailable(msg.sender), "Balance not sufficient");
-        claims[msg.sender].remainingAmount =
-            claims[msg.sender].remainingAmount -
-            _amount;
+
+        claims[msg.sender].claimedAmount = claims[msg.sender].claimedAmount + _amount;
+
         return token.transfer(msg.sender, _amount);
     }
 
     function renounce() public onlyContributor {
-        uint256 remainingAmount = claims[msg.sender].remainingAmount;
+        uint256 remainingAmount = claims[msg.sender].amount - claims[msg.sender].claimedAmount;
         token.transfer(treasury, remainingAmount);
         delete claims[msg.sender];
     }
@@ -118,20 +117,22 @@ contract TokenVesting is IVesting {
     function getAvailable(address _receiver) public view returns (uint256) {
         Claim memory claim = claims[_receiver];
 
-        uint256 delta = deltaOf(claim);
-        uint256 recipientBalance = delta * (claim.amountPerSecond);
-
-        if (claim.amount > claim.remainingAmount) {
-            uint256 withdrawnAmount = claim.amount - (claim.remainingAmount);
-            recipientBalance = recipientBalance - (withdrawnAmount);
-        }
-
-        return recipientBalance;
+        return vestedAmount(claim) - claim.claimedAmount;
     }
 
-    function deltaOf(Claim memory claim) internal view returns (uint256) {
-        if (block.timestamp <= start) return 0;
-        if (block.timestamp < claim.end) return block.timestamp - start;
-        return claim.end - start;
+    function vestedAmount(Claim memory claim) internal view returns (uint256) {
+        if (block.timestamp < start) {
+            return 0;
+        } else if (block.timestamp >= start + claim.duration) {
+            return claim.amount;
+        } else {
+            uint256 result = claim.amount * (block.timestamp - start) / claim.duration;
+
+            if(result > claim.amount)
+                result = claim.amount;
+
+            return result;
+        }
+
     }
 }
