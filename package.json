@@ -4,6 +4,8 @@
   "description": "A new and innovative launchpad for projects on the KuCoin Community Chain",
   "main": "hardhat.config.js",
   "scripts": {
+    "deploy": "npx hardhat run --network kucoin_mainnet scripts/deploy.js",
+    "deploy:test": "npx hardhat run --network kucoin_testnet scripts/deploy.js",
     "test": "npx hardhat test"
   },
   "author": "admin@kustarter.com",
@@ -12,7 +14,8 @@
     "@openzeppelin/contracts": "^4.2.0",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "dotenv": "^10.0.0",
-    "hardhat": "^2.4.1"
+    "hardhat": "^2.4.1",
+    "yesno": "^0.3.1"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
