@@ -213,7 +213,16 @@ describe('TokenVesting', function () {
         tokenVesting = await deployVesting();
       });
 
-      it('incorrect parameters', async function () {
+      it('incorrect _amount parameter', async function () {
+        await expect(tokenVesting.connect(treasury).submit(user1.address, deployTime + 3600, 0, 0)).to.be.revertedWith('_amount must be set greater than 0');
+      });
+
+      it('incorrect _receiver parameter', async function () {
+        await tokenVesting.connect(treasury).submit(user1.address, deployTime + 3600, 1, 0);
+        await expect(tokenVesting.connect(treasury).submit(user1.address, deployTime + 3600, 1, 0)).to.be.revertedWith('Claim already exists for this _receiver address');
+      });
+
+      it('incorrect _initialPercentage parameter', async function () {
         await expect(tokenVesting.connect(treasury).submit(user1.address, deployTime + 3600, parseEther('1'), 100)).to.be.revertedWith('_initialPercentage must be a number between 0 and 99');
         await expect(tokenVesting.connect(treasury).submit(user1.address, deployTime + 3600, parseEther('1'), 500)).to.be.revertedWith('_initialPercentage must be a number between 0 and 99');
       });

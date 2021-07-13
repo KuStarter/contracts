@@ -54,15 +54,20 @@ contract TokenVesting is IVesting {
         uint256 _amount,
         uint256 _initialPercentage
     ) public override onlyPresale returns (bool) {
+        require(_amount > 0, "_amount must be set greater than 0");
         require(_initialPercentage >= 0 && _initialPercentage <= 99, "_initialPercentage must be a number between 0 and 99");
+        require(claims[_receiver].amount == 0, "Claim already exists for this _receiver address");
+
         uint256 initialDistribution = (_amount * _initialPercentage) / 100;
         uint256 vestedDistribution = _amount - initialDistribution;
         bool result = token.transfer(_receiver, initialDistribution);
+
         claims[_receiver] = Claim(
             (_end - start),
             vestedDistribution,
             0
         );
+
         return result;
     }
 
