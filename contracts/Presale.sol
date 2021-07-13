@@ -35,7 +35,7 @@ contract Presale is Ownable, Pausable {
     mapping(address => uint256) public deposits;
 
     constructor(address payable _liquidity, uint256 _tokensPerKcs, uint256 _hardCapKcs, uint256 _minimumDepositKcsAmount, uint256 _maximumDepositKcsAmount) {
-        uniswap = IUniswapV2Router02(0xc0fFee0000C824D24E0F280f1e4D21152625742b); // TODO: Choose KCC DEX, using KoffeSwap for now
+        uniswap = IUniswapV2Router02(0xc0fFee0000C824D24E0F280f1e4D21152625742b); // TODO: Choose KCC DEX, using KoffewSwap for now, NB: KoffeeSwap broke the ABI and uses addLiquidityKCS for example (https://github.com/KoffeeSwap/koffeeswap-contracts/blob/master/router/KoffeeSwapRouter.sol)
         liquidity = _liquidity;
         tokensPerKcs = _tokensPerKcs;
         hardCapEthAmount = _hardCapKcs;
