@@ -3,10 +3,10 @@ pragma solidity ^0.8.2;
 
 import "./interfaces/IVesting.sol";
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/Pausable.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "hardhat/console.sol";
 
@@ -14,7 +14,6 @@ contract Presale is Ownable, Pausable {
     event Deposited(address indexed user, uint256 amount);
     event Recovered(address token, uint256 amount);
 
-    bool public seedSale = true;
     bool public initialized = false;
     IVesting public vesting;
     address payable public liquidity;
@@ -44,29 +43,24 @@ contract Presale is Ownable, Pausable {
         _pause();
     }
 
-    function initialize(address _vesting) public onlyOwner {
+    function initialize(address _vesting, address[] memory _addresses, uint256[] memory _ends, uint256[] memory _amounts, uint256[] memory _initials) public onlyOwner {
         require(!initialized, "Already initialized");
         vesting = IVesting(_vesting);
+        vesting.submitMulti(_addresses, _ends, _amounts, _initials);
         initialized = true;
     }
 
-    function addPrivateAllocations(address[] memory _addresses, uint256[] memory _ends, uint256[] memory _amounts, uint256[] memory _initials) public onlyOwner {
-        require(seedSale == true, 'Private sale is ended');
-        vesting.submitMulti(_addresses, _ends, _amounts, _initials);
-        seedSale = false;
-    }
-
     receive() external payable {
-        require(seedSale == false, 'Private sale is not ended');
+        require(initialized, "Not initialized");
         require(
             block.timestamp >= presaleStartTimestamp && block.timestamp <= presaleEndTimestamp,
-            'presale is not active'
+            "presale is not active"
         );
-        require(totalDepositedEthBalance + (msg.value) <= hardCapEthAmount, 'deposit limits reached');
+        require(totalDepositedEthBalance + (msg.value) <= hardCapEthAmount, "deposit limits reached");
         require(
             deposits[msg.sender] + (msg.value) >= minimumDepositKcsAmount &&
                 deposits[msg.sender] + (msg.value) <= maximumDepositKcsAmount,
-            'incorrect amount'
+            "incorrect amount"
         );
 
         uint256 tokenAmount = msg.value * tokensPerKcs;
@@ -86,23 +80,17 @@ contract Presale is Ownable, Pausable {
         emit Unpaused(msg.sender);
     }
 
-    function withdraw() external onlyOwner {
-        require(seedSale == true, 'Private sale is ended');
-        uint256 balance = address(this).balance;
-        payable(msg.sender).transfer(balance);
-    }
-
     function releaseFunds() external onlyOwner {
         require(
             block.timestamp >= presaleEndTimestamp || totalDepositedEthBalance == hardCapEthAmount,
-            'presale is active'
+            "presale is active"
         );
         uint256 liquidityEth = address(this).balance / (2);
         liquidity.transfer(liquidityEth);
     }
 
     function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner returns (bool) {
-        require(block.timestamp >= lock + (52 weeks), 'You can claim LP tokens only after 52 weeks');
+        require(block.timestamp >= lock + (52 weeks), "You can claim LP tokens only after 52 weeks");
         bool result = IERC20(tokenAddress).transfer(this.owner(), tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
         return result;
@@ -117,7 +105,7 @@ contract Presale is Ownable, Pausable {
     }
 
     function addLiquidity() external {
-        require(block.timestamp < saleCompleted + 15 minutes, 'Listing cannot occur less than 15 minutes before presale finishes');
+        require(block.timestamp < saleCompleted + 15 minutes, "Listing cannot occur less than 15 minutes before presale finishes");
 
         // Set liquidity lock to now, this will be checked in recoverERC20
         lock = block.timestamp;

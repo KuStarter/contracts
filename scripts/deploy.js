@@ -10,8 +10,7 @@ async function main() {
   // Deploy $KUST token, mint funds to Treasury and DAO fund
   // Deploy Presale
   // Deploy Vesting
-  // Init Presale with Vesting address
-  //  
+  // Init Presale with Vesting address and private sale details
 
   // const Greeter = await hre.ethers.getContractFactory("Greeter");
   // const greeter = await Greeter.deploy("Hello, Hardhat!");
