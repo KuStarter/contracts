@@ -41,13 +41,14 @@ describe('TokenVesting', function () {
     describe('core functionality, single-claim scenario', function () {
       before(async function () {
         tokenVesting = await deployVesting();
-        await tokenVesting.connect(treasury).submit(user1.address, deployTime + 3600, parseEther('1'), 0);
         await erc20.connect(treasury).approve(tokenVesting.address, parseEther('1'));
         await tokenVesting.connect(treasury).deposit(parseEther('1'));
+        await tokenVesting.connect(treasury).submit(user1.address, deployTime + 3600, parseEther('1'), 0);
       });
 
-      it('token balance should so far be negligible', async function () {
-        expect(await tokenVesting.getAvailable(user1.address)).to.be.lt(parseEther('0.01'));
+      it('token balance should be 0, and claimable should be 0', async function () {
+        expect(await erc20.balanceOf(user1.address)).to.be.eq(parseEther('0'));
+        expect(await tokenVesting.getAvailable(user1.address)).to.be.eq(parseEther('0'));
       });
 
       it('token balance should incrementally fill', async function () {
@@ -77,12 +78,52 @@ describe('TokenVesting', function () {
       });
     });
 
+    describe('core functionality, single-claim scenario, initial 20%', function () {
+      before(async function () {
+        tokenVesting = await deployVesting();
+        await erc20.connect(treasury).approve(tokenVesting.address, parseEther('1'));
+        await tokenVesting.connect(treasury).deposit(parseEther('1'));
+        await tokenVesting.connect(treasury).submit(user1.address, deployTime + 3600, parseEther('1'), 20);
+      });
+
+      it('token balance should so far be 20%, and claimable should be 0', async function () {
+        expect(await erc20.balanceOf(user1.address)).to.be.gt(parseEther('0.2'));
+        expect(await tokenVesting.getAvailable(user1.address)).to.be.eq(parseEther('0'));
+      });
+
+      // it('token balance should incrementally fill', async function () {
+      //   await increaseTime(minute, 20);
+      //   expect(await tokenVesting.getAvailable(user1.address)).to.be.gt(parseEther('0.2'));
+      // });
+
+      // it('token balance should approach 1eth, slightly less due to precision loss', async function () {
+      //   await increaseTime(minute, 40);
+      //   expect(await tokenVesting.getAvailable(user1.address)).to.be.gt(parseEther('0.995'));
+      // });
+
+      // it('claiming entire balance should transfer, ensure user afterwards is zero', async function () {
+      //   await increaseTime(minute, 1);
+      //   const toClaim = await tokenVesting.getAvailable(user1.address);
+      //   await tokenVesting.connect(user1).claimTokens(toClaim);
+      //   expect(await erc20.balanceOf(user1.address)).to.be.gt(parseEther('0.999'));
+      // });
+
+      // it('user should now have no more available tokens', async function () {
+      //   expect(await tokenVesting.getAvailable(user1.address)).to.be.eq('0');
+      // });
+
+      // it('user should no longer be able to claim', async function () {
+      //   await increaseTime(hour, 1);
+      //   await expect(tokenVesting.connect(user1).claimTokens('1')).to.be.revertedWith('Balance not sufficient');
+      // });
+    });
+
     describe('core functionality, multi-claim scenario over a year', function () {
       before(async function () {
         tokenVesting = await deployVesting();
-        await tokenVesting.connect(treasury).submit(user2.address, deployTime + roughYear, parseEther('60'), 0);
         await erc20.connect(treasury).approve(tokenVesting.address, parseEther('60'));
         await tokenVesting.connect(treasury).deposit(parseEther('60'));
+        await tokenVesting.connect(treasury).submit(user2.address, deployTime + roughYear, parseEther('60'), 0);
       });
 
       it('token balance should so far be negligible', async function () {
@@ -126,9 +167,9 @@ describe('TokenVesting', function () {
     describe('core functionality, claim with renounce', function () {
       before(async function () {
         tokenVesting = await deployVesting();
-        await tokenVesting.connect(treasury).submit(user3.address, deployTime + 3600, parseEther('1'), '0');
         await erc20.connect(treasury).approve(tokenVesting.address, parseEther('1'));
         await tokenVesting.connect(treasury).deposit(parseEther('1'));
+        await tokenVesting.connect(treasury).submit(user3.address, deployTime + 3600, parseEther('1'), '0');
       });
 
       it('token balance should so far be negligible', async function () {
@@ -140,11 +181,11 @@ describe('TokenVesting', function () {
         expect(await tokenVesting.getAvailable(user3.address)).to.be.gt(parseEther('0.2'));
       });
 
-      // it('claiming entire balance should transfer, ensure user afterwards is zero', async function () {
-      //   const toClaim = await tokenVesting.getAvailable(user3.address);
-      //   await tokenVesting.connect(user3).claimTokens(toClaim);
-      //   expect(await erc20.balanceOf(user3.address)).to.be.eq(toClaim);
-      // });
+      it('claiming entire balance should transfer, ensure user afterwards is zero', async function () {
+        const toClaim = await tokenVesting.getAvailable(user3.address);
+        await tokenVesting.connect(user3).claimTokens(toClaim);
+        expect(await erc20.balanceOf(user3.address)).to.be.eq(toClaim);
+      });
 
       it('user should be able to renounce', async function () {
         await tokenVesting.connect(user3).renounce();
@@ -187,5 +228,5 @@ describe('TokenVesting', function () {
     });
   });
 
-  describe('Future vesting', function () {});
+  describe('Future vesting', function () { });
 });

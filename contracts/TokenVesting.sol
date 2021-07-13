@@ -1,20 +1,13 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
+import "./interfaces/IVesting.sol";
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface Token {
-    function mint(address to, uint256 value) external;
+import "hardhat/console.sol";
 
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external;
-}
-
-contract TokenVesting {
+contract TokenVesting is IVesting {
     struct Claim {
         uint256 end;
         uint256 amount;
@@ -24,7 +17,7 @@ contract TokenVesting {
 
     mapping(address => Claim) public claims;
     uint256 public start;
-    Token public token;
+    IERC20 public token;
     address public treasury;
     address public presale;
 
@@ -55,53 +48,67 @@ contract TokenVesting {
         presale = _presale;
         treasury = _treasury;
         start = _start;
-        token = Token(_token);
+        token = IERC20(_token);
     }
 
     function submit(
         address _receiver,
         uint256 _end,
         uint256 _amount,
-        uint256 _initial
-    ) public onlyPresale {
-        uint256 initialDistribution = (_amount * _initial) / 100;
+        uint256 _initialPercentage
+    ) public override onlyPresale returns (bool) {
+        uint256 initialDistribution = (_amount * _initialPercentage) / 100;
         uint256 vestedDistribution = _amount - initialDistribution;
-        token.mint(_receiver, vestedDistribution);
+        bool result = token.transfer(_receiver, initialDistribution);
         claims[_receiver] = Claim(
             _end,
             vestedDistribution,
             vestedDistribution,
             vestedDistribution / (_end - start)
         );
+        return result;
     }
 
     function submitMulti(
         address[] memory _receivers,
         uint256[] memory _ends,
         uint256[] memory _amounts,
-        uint256[] memory _initials
-    ) public onlyPresale {
+        uint256[] memory _initialPercentages
+    ) public override onlyPresale returns (bool) {
+        require((_receivers.length == _ends.length) &&
+                (_ends.length == _amounts.length) &&
+                (_amounts.length == _initialPercentages.length),
+            "All arrays must be the same length"
+        );
+
         for (uint256 i = 0; i < _receivers.length; i++) {
-            submit(_receivers[i], _ends[i], _amounts[i], _initials[i]);
+            bool result = submit(
+                _receivers[i],
+                _ends[i],
+                _amounts[i],
+                _initialPercentages[i]
+            );
+            require(result, "A submit call inside the for loop failed");
         }
+        return true;
     }
 
-    function claimTokens(uint256 _amount) public onlyContributor {
+    function claimTokens(uint256 _amount) public onlyContributor returns (bool) {
         require(_amount <= getAvailable(msg.sender), "Balance not sufficient");
         claims[msg.sender].remainingAmount =
             claims[msg.sender].remainingAmount -
             _amount;
-        token.mint(msg.sender, _amount);
+        return token.transfer(msg.sender, _amount);
     }
 
     function renounce() public onlyContributor {
         uint256 remainingAmount = claims[msg.sender].remainingAmount;
-        token.mint(treasury, remainingAmount);
+        token.transfer(treasury, remainingAmount);
         delete claims[msg.sender];
     }
 
-    function deposit(uint256 _amount) public onlyTreasury {
-        token.transferFrom(treasury, address(this), _amount);
+    function deposit(uint256 _amount) public onlyTreasury returns (bool) {
+        return token.transferFrom(treasury, address(this), _amount);
     }
 
     function updateTreasury(address _treasury) public onlyTreasury {
