@@ -77,6 +77,7 @@ contract TokenVesting is IVesting {
         uint256[] memory _amounts,
         uint256[] memory _initialPercentages
     ) public override onlyPresale returns (bool) {
+        require(_receivers.length <= 256, "Arrays cannot be over 256 in length");
         require((_receivers.length == _ends.length) &&
                 (_ends.length == _amounts.length) &&
                 (_amounts.length == _initialPercentages.length),
