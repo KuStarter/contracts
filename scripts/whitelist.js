@@ -13,5 +13,4 @@ module.exports = async (args) => {
     return;
   }
 
-  await deployTimelocks();
 };
