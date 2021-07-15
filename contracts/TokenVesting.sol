@@ -16,7 +16,7 @@ contract TokenVesting is IVesting {
     uint256 public start;
     IERC20 public token;
     address public treasury;
-    address public presale;
+    address public submitter;
 
     modifier onlyTreasury() {
         require(msg.sender == treasury, "Not treasury");
@@ -31,18 +31,18 @@ contract TokenVesting is IVesting {
         _;
     }
 
-    modifier onlyPresale() {
-        require(msg.sender == presale, "Not presale");
+    modifier onlySubmitter() {
+        require(msg.sender == submitter, "Not submitter");
         _;
     }
 
     constructor(
-        address _presale,
+        address _submitter,
         address _treasury,
         uint256 _start,
         address _token
     ) {
-        presale = _presale;
+        submitter = _submitter;
         treasury = _treasury;
         start = _start;
         token = IERC20(_token);
@@ -53,7 +53,7 @@ contract TokenVesting is IVesting {
         uint256 _end,
         uint256 _amount,
         uint256 _initialPercentage
-    ) public override onlyPresale returns (bool) {
+    ) public override onlySubmitter returns (bool) {
         require(_amount > 0, "_amount must be set greater than 0");
         require(_initialPercentage >= 0 && _initialPercentage <= 99, "_initialPercentage must be a number between 0 and 99");
         require(claims[_receiver].amount == 0, "Claim already exists for this _receiver address");
@@ -76,7 +76,7 @@ contract TokenVesting is IVesting {
         uint256[] memory _ends,
         uint256[] memory _amounts,
         uint256[] memory _initialPercentages
-    ) public override onlyPresale returns (bool) {
+    ) public override onlySubmitter returns (bool) {
         require(_receivers.length <= 256, "Arrays cannot be over 256 in length");
         require((_receivers.length == _ends.length) &&
                 (_ends.length == _amounts.length) &&

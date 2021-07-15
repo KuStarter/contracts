@@ -1,18 +1,32 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "./interfaces/IPresale.sol";
+import "./interfaces/IERC20RemovePauser.sol";
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 
-contract KuStarterToken is ERC20("KuStarter", "KUST") {
-    IPresale public presale;
+contract KuStarterToken is ERC20Pausable, IERC20RemovePauser {
+
+    event PauserRemoved();
+
+    address public pauser;
+    address public presale;
+
+    modifier onlyPauser() {
+        require(pauser == _msgSender() && address(0) != _msgSender(), "KuStarterToken: caller is not the pauser");
+        _;
+    }
+
+    modifier onlyPresale() {
+        require(presale == _msgSender(), "KuStarterToken: caller is not the presale contract");
+        _;
+    }
 
     constructor(
         address[] memory _receivers,
         uint256[] memory _amounts,
         address _presale
-    ) {
+    ) ERC20("KuStarter", "KUST") {
         require(
             _receivers.length <= 7,
             "_receivers cannot be over 7 in length"
@@ -25,23 +39,25 @@ contract KuStarterToken is ERC20("KuStarter", "KUST") {
         for (uint256 i = 0; i < _receivers.length; i++) {
             _mint(_receivers[i], _amounts[i]);
         }
-        
-        presale = IPresale(_presale);
+
+        presale = _presale;
+        pauser = _msgSender();
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override {
-        super._beforeTokenTransfer(from, to, amount);
+    function pause() onlyPauser external {
+        _pause();
+    }
 
-        // needed so that presale can send tokens to Uniswap router
-        if (from != address(presale)) {
-            require(
-                presale.presaleComplete(),
-                "KuStarter: presale not complete"
-            );
-        }
+    function unpause() onlyPauser external {
+        _unpause();
+    }
+
+    /**
+     * This allows our presale contract to remove the pausing functionality once the presale is over
+     */
+    function removePauser() onlyPresale external override {
+        pauser = address(0);
+        _unpause();
+        emit PauserRemoved();
     }
 }
