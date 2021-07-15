@@ -4,8 +4,8 @@
   "description": "A new and innovative launchpad for projects on the KuCoin Community Chain",
   "main": "hardhat.config.js",
   "scripts": {
-    "deploy": "npx hardhat run --network kucoin_mainnet scripts/deploy.js",
-    "deploy:test": "npx hardhat run --network kucoin_testnet scripts/deploy.js",
+    "deploy": "npx hardhat --network kucoin_mainnet deploy",
+    "deploy:test": "npx hardhat --network kucoin_testnet deploy",
     "test": "npx hardhat test"
   },
   "author": "admin@kustarter.com",

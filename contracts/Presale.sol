@@ -34,17 +34,18 @@ contract Presale is Ownable, IPresale {
     mapping(address => bool) public whitelist;
     uint256 public numWhitelisted = 0;
 
-    constructor(address payable _treasury, uint256 _tokensPerKcs, uint256 _hardCapKcs, uint256 _minimumDepositKcsAmount, uint256 _maximumDepositKcsAmount) {
+    constructor(address payable _treasury, uint256 _tokensPerKcs, uint256 _hardCapKcs, uint256 _minimumDepositKcsAmount, uint256 _maximumDepositKcsAmount, uint256 _presaleStartTimestamp, uint256 _presaleEndTimestamp) {
         uniswap = IUniswapV2Router02(0xc0fFee0000C824D24E0F280f1e4D21152625742b); // TODO: Choose KCC DEX, using KoffewSwap for now, NB: KoffeeSwap broke the ABI and uses addLiquidityKCS for example (https://github.com/KoffeeSwap/koffeeswap-contracts/blob/master/router/KoffeeSwapRouter.sol)
         treasury = _treasury;
         tokensPerKcs = _tokensPerKcs;
         hardCapEthAmount = _hardCapKcs;
         minimumDepositKcsAmount = _minimumDepositKcsAmount;
         maximumDepositKcsAmount = _maximumDepositKcsAmount;
+        presaleStartTimestamp = _presaleStartTimestamp;
+        presaleEndTimestamp = _presaleEndTimestamp;
     }
 
     function addToWhitelist(address _whitelistee) public onlyOwner {
-        require(!initialized, "Already initialized");
         require(numWhitelisted <= 200, "Cannot whitelist more than 200 addresses");
         require(!whitelist[_whitelistee], "Whitelistee already added!");
         whitelist[_whitelistee] = true;
@@ -56,6 +57,21 @@ contract Presale is Ownable, IPresale {
 
         for (uint256 i = 0; i < _whitelistees.length; i++) {
             addToWhitelist(_whitelistees[i]);
+        }
+    }
+
+    function removeFromWhitelist(address _whitelistee) public onlyOwner {
+        require(numWhitelisted > 0, "Cannot remove if no one is whitelisted");
+        require(whitelist[_whitelistee], "Whitelistee does not exist!");
+        whitelist[_whitelistee] = false;
+        numWhitelisted--;
+    }
+
+    function removeFromWhitelistMulti(address[] memory _whitelistees) public onlyOwner {
+        require(_whitelistees.length <= 256, "Arrays cannot be over 256 in length");
+
+        for (uint256 i = 0; i < _whitelistees.length; i++) {
+            removeFromWhitelist(_whitelistees[i]);
         }
     }
 

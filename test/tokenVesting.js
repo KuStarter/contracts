@@ -1,5 +1,5 @@
-const { expect } = require('chai');
-const parseEther = ethers.utils.parseEther;
+const { expect } = require("chai");
+const { parseEther } = ethers.utils;
 
 describe('TokenVesting', function () {
   let erc20, tokenVesting, deployTime, treasury, user1, user2, user3, user4, renouncer, attacker;

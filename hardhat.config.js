@@ -1,7 +1,34 @@
 require('dotenv').config();
 require("@nomiclabs/hardhat-waffle");
+const { task } = require('hardhat/config');
+const deploy = require('./scripts/deploy');
+const whitelist = require('./scripts/whitelist');
 
+task("deploy", "Deploys the contracts")
+  .addFlag(
+    "y",
+    "Skips any confirmations and automatically agrees to them. Use with caution!"
+  )
+  .setAction(deploy);
 
+task("whitelist", "Add or remove addresses from the whitelist")
+  .addPositionalParam(
+    "action",
+    `"add" or "remove"`,
+    undefined,
+    types.string
+  )
+  .addPositionalParam(
+    "file",
+    "The relative path to the file of addresses to perform the action on. Should be a line-delimtted file of KCC addresses",
+    undefined,
+    types.inputFile
+  )
+  .setAction(whitelist);
+
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
 module.exports = {
   solidity: {
     version: "0.8.6",

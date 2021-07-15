@@ -22,7 +22,7 @@ yarn test
 ### Deploy Contracts
 
 ```
-TBC
+yarn run deploy
 ```
 
 #### Deployed Addresses

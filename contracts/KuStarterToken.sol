@@ -8,8 +8,24 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract KuStarterToken is ERC20("KuStarter", "KUST") {
     IPresale public presale;
 
-    constructor(uint256 _amount, address _presale) {
-        _mint(msg.sender, _amount);
+    constructor(
+        address[] memory _receivers,
+        uint256[] memory _amounts,
+        address _presale
+    ) {
+        require(
+            _receivers.length <= 7,
+            "_receivers cannot be over 7 in length"
+        );
+        require(
+            _receivers.length == _amounts.length,
+            "Arrays must be the same length"
+        );
+
+        for (uint256 i = 0; i < _receivers.length; i++) {
+            _mint(_receivers[i], _amounts[i]);
+        }
+        
         presale = IPresale(_presale);
     }
 
