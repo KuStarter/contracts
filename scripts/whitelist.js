@@ -61,6 +61,14 @@ module.exports = async (args) => {
     return;
   }
 
-  // Presale.addToWhitelistMulti()
-  // Presale.removeFromWhitelistMulti()
+  let verb;
+  if (args.action === "add") {
+    await (await presale.addToWhitelistMulti(addresses)).wait();
+    verb = "added";
+  } else { 
+    await (await presale.removeFromWhitelistMulti(addresses)).wait();
+    verb = "removed";
+  }
+
+  console.log(`Successfully ${verb} addresses.`);
 };

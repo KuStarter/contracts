@@ -1,3 +1,4 @@
+const fs = require('fs');
 const { expect } = require("chai");
 const { parseEther } = ethers.utils;
 
@@ -51,11 +52,6 @@ describe('Deployment of KUST', function () {
       parseEther("500000"),
     ];
 
-    // const total = amounts.reduce((prev, curr) => {
-    //   return prev.add(curr);
-    // });
-    // expect(total).to.be.eq(parseEther("10000000"));
-
     for (let i = 0; i < addresses.length; i++) {
       expect(await contracts.kuStarterToken.balanceOf(addresses[i])).to.be.eq(amounts[i]);
     }
@@ -74,17 +70,19 @@ describe('Deployment of KUST', function () {
     .to.be.revertedWith("You are not in the whitelist!");
   });
   
-  describe('- whitelisting', function () {
+  describe('Whitelisting', function () {
     before(async function () {
       process.env.PRESALE_CONTRACT_ADDRESS = contracts.presale.address;
       
-      //TODO: output user address to test-whitelist.txt 
+      const file = `${__dirname}/res/test-whitelist.txt`;
+      const data = user.address + "\n";
+      fs.writeFileSync(file, data);
       
-      await hre.run("whitelist", { y: true, action: 'add', file: './res/test-whitelist.txt' });
+      await hre.run("whitelist", { y: true, action: 'add', file });
     });
 
     it('presale not started yet', async function () {
-      await expect(attacker.sendTransaction( {
+      await expect(user.sendTransaction( {
         to: contracts.presale.address,
         value: parseEther("1")
       }))
