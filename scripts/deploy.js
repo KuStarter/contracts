@@ -94,8 +94,8 @@ async function deploySaleVesting(ethers, contracts) {
   console.log(` > SaleVesting deployed to: ${saleVesting.address}`);
   contracts.saleVesting = saleVesting;
 
-  const balance = contracts.kuStarterToken.balanceOf(saleTreasury.address);
-  await contracts.kuStarterToken.connect(saleTreasury).approve(saleVesting.address, balance);
+  const balance = await contracts.kuStarterToken.balanceOf(saleTreasury.address);
+  await (await contracts.kuStarterToken.connect(saleTreasury).approve(saleVesting.address, balance)).wait();
   await saleVesting.connect(saleTreasury).deposit(balance);
 }
 
@@ -113,13 +113,13 @@ async function deployMarketingVesting(ethers, contracts) {
   console.log(` > MarketingVesting deployed to: ${marketingVesting.address}`);
   contracts.marketingVesting = marketingVesting;
 
-  const balance = contracts.kuStarterToken.balanceOf(marketingTreasury.address);
-  await contracts.kuStarterToken.connect(marketingTreasury).approve(marketingVesting.address, balance);
+  const balance = await contracts.kuStarterToken.balanceOf(marketingTreasury.address);
+  await (await contracts.kuStarterToken.connect(marketingTreasury).approve(marketingVesting.address, balance)).wait();
   await marketingVesting.connect(marketingTreasury).deposit(balance);
 
   const marketingAddresses = [
-    marketingTreasury.address, //460.5k
-    "0x3ef37B4Bb5e64D0D9536ad437342C216107d6DF5", //5k
+    marketingTreasury.address, //457.5k
+    "0x3ef37B4Bb5e64D0D9536ad437342C216107d6DF5", //8k
     "0x49E06C535F31feC81831D69FdDe2d0427d6Dd0C4", //2.5k
     "0xa8C7864111e1e29ea89140900aB0b997be47f1bf", //2k
     "0x3049B83eDc77dDae90c709F7677bd6D2dBb821ED", //30k
@@ -128,8 +128,8 @@ async function deployMarketingVesting(ethers, contracts) {
   const ends = Array(marketingAddresses.length).fill(process.env.MARKETING_VESTING_END_TIME);
 
   const amounts = [
-    parseEther("460500"), //460.5k
-    parseEther("5000"), //5k
+    parseEther("457500"), //457.5k
+    parseEther("8000"), //8k
     parseEther("2500"), //2.5k
     parseEther("2000"), //2k
     parseEther("30000"), //30k
@@ -155,10 +155,10 @@ async function deployDevelopmentVesting(ethers, contracts) {
   contracts.developmentVesting1 = developmentVesting1;
 
   const balance = parseEther("500000");
-  await contracts.kuStarterToken.connect(developmentTreasury).approve(developmentVesting1.address, balance);
+  await (await contracts.kuStarterToken.connect(developmentTreasury).approve(developmentVesting1.address, balance)).wait();
   await developmentVesting1.connect(developmentTreasury).deposit(balance);
 
-  await developmentVesting1.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_1_VESTING_END_TIME, parseEther("500000"), 0);
+  await developmentVesting1.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_1_VESTING_END_TIME, balance, 0);
 
   //DevelopmentVesting2 - 50%
   const DevelopmentVesting2 = await ethers.getContractFactory("TokenVesting");
@@ -173,10 +173,10 @@ async function deployDevelopmentVesting(ethers, contracts) {
   console.log(` > DevelopmentVesting2 deployed to: ${developmentVesting2.address}`);
   contracts.developmentVesting2 = developmentVesting2;
 
-  await contracts.kuStarterToken.connect(developmentTreasury).approve(developmentVesting2.address, balance);
+  await (await contracts.kuStarterToken.connect(developmentTreasury).approve(developmentVesting2.address, balance)).wait();
   await developmentVesting2.connect(developmentTreasury).deposit(balance);
 
-  await developmentVesting2.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_2_VESTING_END_TIME, parseEther("500000"), 0);
+  await developmentVesting2.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_2_VESTING_END_TIME, balance, 0);
 }
 
 async function initializePresale(contracts) {

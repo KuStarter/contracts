@@ -56,14 +56,16 @@ module.exports = {
       chainId: 321,
       accounts: {
         mnemonic: process.env.SEED_PHRASE
-      }
+      },
+      gasPrice: 5000000000 // 5 gwei
     },
     kucoin_testnet: {
       url: 'https://rpc-testnet.kcc.network',
       chainId: 322,
       accounts: {
         mnemonic: process.env.TEST_SEED_PHRASE
-      }
+      },
+      gasPrice: 1000000000 // 1 gwei
     }
   },
   mocha: {
