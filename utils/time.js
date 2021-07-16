@@ -6,6 +6,10 @@ const week = day * 7;
 const roughMonth = day * 30;
 const roughYear = roughMonth * 12;
 
+const getBlockchainTime = async function (ethers) {
+  const block = await ethers.provider.getBlock("latest");
+  return block.timestamp;
+};
 
 const getTime = function () {
   return Math.floor(new Date().getTime() / 1000);
@@ -16,4 +20,4 @@ const increaseTime = async function (timeSpan, number, ethers) {
   await ethers.provider.send('evm_mine');
 };
 
-module.exports = { minute, hour, day, week, roughMonth, roughYear, getTime, increaseTime };
+module.exports = { minute, hour, day, week, roughMonth, roughYear, getBlockchainTime, getTime, increaseTime };
