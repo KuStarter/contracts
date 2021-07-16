@@ -24,6 +24,10 @@ task("whitelist", "Add or remove addresses from the whitelist")
     undefined,
     types.inputFile
   )
+  .addFlag(
+    "y",
+    "Skips any confirmations and automatically agrees to them. Use with caution!"
+  )
   .setAction(whitelist);
 
 /**

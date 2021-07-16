@@ -6,7 +6,9 @@
   "scripts": {
     "deploy": "npx hardhat --network kucoin_mainnet deploy",
     "deploy:test": "npx hardhat --network kucoin_testnet deploy",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "whitelist": "npx hardhat --network kucoin_mainnet whitelist",
+    "whitelist:test": "npx hardhat --network kucoin_testnet whitelist"
   },
   "author": "admin@kustarter.com",
   "license": "MIT",

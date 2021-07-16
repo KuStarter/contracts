@@ -1,23 +1,10 @@
 const { parseEther } = require("ethers/lib/utils");
 const yesno = require("yesno");
 
+const utils = require("../utils");
 const time = require("../utils/time");
 
 let deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury;
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function checkEnvVars(...envVars) {
-  return envVars.every(envVar => {
-    if (!process.env[envVar]) {
-      console.warn(`${envVar} not set.`);
-      return false;
-    }
-    return true;
-  });
-}
 
 async function deployTimelocks(ethers, contracts) {
   // DAOFundTimelock
@@ -49,8 +36,9 @@ async function deployPresale(ethers, contracts) {
   // Presale - below figures represent a price of 10 USD / KCS
   // TODO: Check below figures
   const Presale = await ethers.getContractFactory("Presale");
-  const presale = await Presale.deploy(saleTreasury.address,
-    parseEther("40"),
+  const presale = await Presale.deploy(
+    saleTreasury.address,
+    40,
     parseEther("10000"),
     parseEther("25"),
     parseEther("25"),
@@ -96,9 +84,9 @@ async function deploySaleVesting(ethers, contracts) {
   //SaleVesting
   const SaleVesting = await ethers.getContractFactory("TokenVesting");
   const saleVesting = await SaleVesting.deploy(
-    contracts.presale.address, 
-    saleTreasury.address, 
-    process.env.VESTING_START_TIME, 
+    contracts.presale.address,
+    saleTreasury.address,
+    process.env.VESTING_START_TIME,
     contracts.kuStarterToken.address
   );
 
@@ -116,8 +104,8 @@ async function deployMarketingVesting(ethers, contracts) {
   const MarketingVesting = await ethers.getContractFactory("TokenVesting");
   const marketingVesting = await MarketingVesting.deploy(
     marketingTreasury.address,
-    marketingTreasury.address, 
-    process.env.PRESALE_END_TIME, 
+    marketingTreasury.address,
+    process.env.PRESALE_END_TIME,
     contracts.kuStarterToken.address
   );
 
@@ -129,8 +117,66 @@ async function deployMarketingVesting(ethers, contracts) {
   await contracts.kuStarterToken.connect(marketingTreasury).approve(marketingVesting.address, balance);
   await marketingVesting.connect(marketingTreasury).deposit(balance);
 
-  // TODO: Add marketing wallets, they are in notion
-  // await marketingVesting.connect(marketingTreasury).submit(balance);
+  const marketingAddresses = [
+    marketingTreasury.address, //460.5k
+    "0x3ef37B4Bb5e64D0D9536ad437342C216107d6DF5", //5k
+    "0x49E06C535F31feC81831D69FdDe2d0427d6Dd0C4", //2.5k
+    "0xa8C7864111e1e29ea89140900aB0b997be47f1bf", //2k
+    "0x3049B83eDc77dDae90c709F7677bd6D2dBb821ED", //30k
+  ];
+
+  const ends = Array(marketingAddresses.length).fill(process.env.MARKETING_VESTING_END_TIME);
+
+  const amounts = [
+    parseEther("460500"), //460.5k
+    parseEther("5000"), //5k
+    parseEther("2500"), //2.5k
+    parseEther("2000"), //2k
+    parseEther("30000"), //30k
+  ];
+
+  const initials = Array(marketingAddresses.length).fill(0);
+
+  await marketingVesting.connect(marketingTreasury).submitMulti(marketingAddresses, ends, amounts, initials);
+}
+
+async function deployDevelopmentVesting(ethers, contracts) {
+  //DevelopmentVesting1 - 50%
+  const DevelopmentVesting1 = await ethers.getContractFactory("TokenVesting");
+  const developmentVesting1 = await DevelopmentVesting1.deploy(
+    developmentTreasury.address,
+    developmentTreasury.address,
+    process.env.PRESALE_END_TIME,
+    contracts.kuStarterToken.address
+  );
+
+  await developmentVesting1.deployed();
+  console.log(` > DevelopmentVesting1 deployed to: ${developmentVesting1.address}`);
+  contracts.developmentVesting1 = developmentVesting1;
+
+  const balance = parseEther("500000");
+  await contracts.kuStarterToken.connect(developmentTreasury).approve(developmentVesting1.address, balance);
+  await developmentVesting1.connect(developmentTreasury).deposit(balance);
+
+  await developmentVesting1.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_1_VESTING_END_TIME, parseEther("500000"), 0);
+
+  //DevelopmentVesting2 - 50%
+  const DevelopmentVesting2 = await ethers.getContractFactory("TokenVesting");
+  const developmentVesting2 = await DevelopmentVesting2.deploy(
+    developmentTreasury.address,
+    developmentTreasury.address,
+    process.env.PRESALE_END_TIME,
+    contracts.kuStarterToken.address
+  );
+
+  await developmentVesting2.deployed();
+  console.log(` > DevelopmentVesting2 deployed to: ${developmentVesting2.address}`);
+  contracts.developmentVesting2 = developmentVesting2;
+
+  await contracts.kuStarterToken.connect(developmentTreasury).approve(developmentVesting2.address, balance);
+  await developmentVesting2.connect(developmentTreasury).deposit(balance);
+
+  await developmentVesting2.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_2_VESTING_END_TIME, parseEther("500000"), 0);
 }
 
 async function initializePresale(contracts) {
@@ -176,34 +222,28 @@ async function initializePresale(contracts) {
   );
   await tx.wait(); // wait for it to be mined
 }
-/**
- * Deploy DAOFundTimelock, StakingRewardsTimelock, LPMiningRewardsTimelock
- * Deploy Presale
- * Deploy $KUST token:
-   * mint 5,000,000 to DAOFundTimelock
-   * mint 1,575,000 to StakingRewardsTimelock
-   * mint 1,000,000 to LPMiningRewardsTimelock
-   * mint 1,000,000 to Development Treasury (EOA)
-   * mint 700,000 to Sale Treasury (EOA)
-   * mint 500,000 to Marketing Treasury (EOA)
-   * mint 225,000 to Presale for liquidity
- * Deploy Vesting for seed and presale (_start must be two weeks after listing)
- * Sale Treasury calls Vesting.deposit()
- * Deploy Vesting for marketing
- * Marketing Treasury calls Vesting.deposit() and submit
- * Deploy Vesting for development first 50%
- * Development Treasury calls Vesting.deposit()
- * Deploy Vesting for development second 50%
- * Development Treasury calls Vesting.deposit()
- * Presale.initialize() with Vesting address and private sale investors
- * token.pause()
- */
+
 module.exports = async (args) => {
   const skipQuestions = args.y;
   if (skipQuestions) {
     console.warn("You have passed --y, which means you will not be prompted for any confirmations! Giving you 3 seconds to kill me...");
-    await sleep(3000);
+    await utils.sleep(3000);
     console.warn("Time is up! Let's go!");
+  }
+
+  // Please ensure to add environment variables that are needed here
+  const envVarsSet = utils.checkEnvVars(
+    "PRESALE_START_TIME",
+    "PRESALE_END_TIME",
+    "VESTING_START_TIME",
+    "SEED_VESTING_END_TIME",
+    "MARKETING_VESTING_END_TIME",
+    "DEVELOPMENT_1_VESTING_END_TIME",
+    "DEVELOPMENT_2_VESTING_END_TIME"
+  );
+  if (!envVarsSet) {
+    console.error("Environment variables not setup correctly. Quitting.");
+    return;
   }
 
   let ok = skipQuestions ? true : await yesno({ question: `Are you sure you want to deploy on ${hre.network.name} (y/n)?` });
@@ -220,24 +260,12 @@ module.exports = async (args) => {
 
   const contracts = {};
 
-  // Please ensure to add environment variables that are needed here
-  const envVarsSet = checkEnvVars(
-    "PRESALE_START_TIME",
-    "PRESALE_END_TIME",
-    "VESTING_START_TIME",
-    "SEED_VESTING_END_TIME"
-  );
-  if (!envVarsSet) {
-    console.error("Environment variables not setup correctly. Quitting.");
-    return;
-  }
-
   await deployTimelocks(ethers, contracts);
   await deployPresale(ethers, contracts);
   await deployToken(ethers, contracts);
   await deploySaleVesting(ethers, contracts);
   await deployMarketingVesting(ethers, contracts);
-  // await deployDevelopmentVesting(ethers, contracts);
+  await deployDevelopmentVesting(ethers, contracts);
   await initializePresale(contracts);
   await contracts.kuStarterToken.pause();
 
