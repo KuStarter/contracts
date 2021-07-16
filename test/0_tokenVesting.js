@@ -1,5 +1,7 @@
-const { expect } = require('chai');
-const parseEther = ethers.utils.parseEther;
+// due to a lovely waffle and ethers bug https://github.com/EthWorks/Waffle/issues/382 
+// these tests must be run first, so we have a 0 at the start of the test file name
+const { expect } = require("chai");
+const { parseEther } = ethers.utils;
 
 describe('TokenVesting', function () {
   let erc20, tokenVesting, deployTime, treasury, user1, user2, user3, user4, renouncer, attacker;
@@ -53,12 +55,12 @@ describe('TokenVesting', function () {
 
       it('claimable should incrementally fill', async function () {
         await increaseTime(minute, 20);
-        expect(await tokenVesting.getAvailable(user1.address)).to.be.gt(parseEther('0.2'));
+        expect(await tokenVesting.getAvailable(user1.address)).to.be.within(parseEther('0.32'), parseEther('0.34'));
       });
 
       it('claimable should approach 1eth, slightly less due to time math', async function () {
         await increaseTime(minute, 40);
-        expect(await tokenVesting.getAvailable(user1.address)).to.be.gt(parseEther('0.995'));
+        expect(await tokenVesting.getAvailable(user1.address)).to.be.within(parseEther('0.995'), parseEther('1'));
       });
 
       it('claiming entire balance should transfer', async function () {
@@ -236,7 +238,7 @@ describe('TokenVesting', function () {
       it('attacker should not be able to submit allocation', async function () {
         await expect(
           tokenVesting.connect(attacker).submit(user3.address, deployTime + 3600, parseEther('1'), 0)
-        ).to.be.revertedWith('Not presale');
+        ).to.be.revertedWith('Not submitter');
       });
 
       it('attacker should not be able to update treasury', async function () {

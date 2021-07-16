@@ -22,17 +22,22 @@ yarn test
 ### Deploy Contracts
 
 ```
-TBC
+yarn run deploy
 ```
 
 #### Deployed Addresses
 
 | Contract | Contract address |
 |----------|------------------|
-| Presale          | TBC |
-| TokenVesting     | TBC |
-| KUST Token       | TBC |
-| LaunchPad        | TBC | 
+| DAOFundTimelock          | TBC |
+| StakingRewardsTimelock     | TBC |
+| LPMiningRewardsTimelock    | TBC |
+| Presale                    | TBC | 
+| KuStarterToken             | TBC |
+| SaleVesting                | TBC |
+| MarketingVesting           | TBC |
+| DevelopmentVesting1        | TBC | 
+| DevelopmentVesting2        | TBC | 
 
 
 ### Directory Structure

@@ -1,11 +1,68 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./interfaces/IERC20RemovePauser.sol";
 
-contract KuStarterToken is ERC20("KuStarter", "KUST") {
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 
-    constructor(uint256 _amount) {
-        _mint(msg.sender, _amount);
+contract KuStarterToken is ERC20Pausable, IERC20RemovePauser {
+    event PauserRemoved();
+
+    address public pauser;
+    address public presale;
+
+    modifier onlyPauser() {
+        require(
+            pauser == _msgSender() || presale == _msgSender() && address(0) != _msgSender(),
+            "KuStarterToken: caller is not the pauser"
+        );
+        _;
+    }
+
+    modifier onlyPresale() {
+        require(
+            presale == _msgSender(),
+            "KuStarterToken: caller is not the presale contract"
+        );
+        _;
+    }
+
+    constructor(
+        address[] memory _receivers,
+        uint256[] memory _amounts,
+        address _presale
+    ) ERC20("KuStarter", "KUST") {
+        require(
+            _receivers.length <= 7,
+            "_receivers cannot be over 7 in length"
+        );
+        require(
+            _receivers.length == _amounts.length,
+            "Arrays must be the same length"
+        );
+
+        for (uint256 i = 0; i < _receivers.length; i++) {
+            _mint(_receivers[i], _amounts[i]);
+        }
+
+        presale = _presale;
+        pauser = _msgSender();
+    }
+
+    function pause() external override onlyPauser {
+        _pause();
+    }
+
+    function unpause() external override onlyPauser {
+        _unpause();
+    }
+
+    /**
+     * This allows our presale contract to remove the pausing functionality once the presale is over
+     */
+    function removePauser() external override onlyPresale {
+        pauser = address(0);
+        _unpause();
+        emit PauserRemoved();
     }
 }

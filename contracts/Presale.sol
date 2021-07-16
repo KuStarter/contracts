@@ -2,107 +2,157 @@
 pragma solidity ^0.8.2;
 
 import "./interfaces/IVesting.sol";
+import "./interfaces/IERC20RemovePauser.sol";
+import "./interfaces/IKoffeeSwapRouter.sol";
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/Pausable.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "hardhat/console.sol";
 
-contract Presale is Ownable, Pausable {
+contract Presale is Ownable {
+
     event Deposited(address indexed user, uint256 amount);
     event Recovered(address token, uint256 amount);
 
-    bool public seedSale = true;
     bool public initialized = false;
     IVesting public vesting;
-    address payable public liquidity;
+    address payable public treasury;
 
     uint256 public presaleStartTimestamp;
     uint256 public presaleEndTimestamp;
     uint256 public tokensPerKcs;
-    uint256 public hardCapEthAmount;
+    uint256 public hardCapKcsAmount;
     uint256 public totalDepositedEthBalance;
     uint256 public minimumDepositKcsAmount;
     uint256 public maximumDepositKcsAmount;
+    IERC20RemovePauser public KuStarter;
 
-    IUniswapV2Router02 private uniswap;
-    uint256 public lock;
-    uint256 saleCompleted = 0;
-    address public token;
+    IKoffeeSwapRouter private koffeeswap;
+    uint256 public lock = 0;
 
     mapping(address => uint256) public deposits;
+    mapping(address => bool) public whitelist;
+    uint256 public numWhitelisted = 0;
 
-    constructor(address payable _liquidity, uint256 _tokensPerKcs, uint256 _hardCapKcs, uint256 _minimumDepositKcsAmount, uint256 _maximumDepositKcsAmount) {
-        uniswap = IUniswapV2Router02(0xc0fFee0000C824D24E0F280f1e4D21152625742b); // TODO: Choose KCC DEX, using KoffeSwap for now
-        liquidity = _liquidity;
+    constructor(
+        address payable _treasury,
+        uint256 _tokensPerKcs,
+        uint256 _hardCapKcs,
+        uint256 _minimumDepositKcsAmount,
+        uint256 _maximumDepositKcsAmount,
+        uint256 _presaleStartTimestamp,
+        uint256 _presaleEndTimestamp
+    ) {
+        koffeeswap = IKoffeeSwapRouter(
+            0xc0fFee0000C824D24E0F280f1e4D21152625742b
+        );
+        treasury = _treasury;
         tokensPerKcs = _tokensPerKcs;
-        hardCapEthAmount = _hardCapKcs;
+        hardCapKcsAmount = _hardCapKcs;
         minimumDepositKcsAmount = _minimumDepositKcsAmount;
         maximumDepositKcsAmount = _maximumDepositKcsAmount;
-        _pause();
+        presaleStartTimestamp = _presaleStartTimestamp;
+        presaleEndTimestamp = _presaleEndTimestamp;
     }
 
-    function initialize(address _vesting) public onlyOwner {
+    function addToWhitelist(address _whitelistee) public onlyOwner {
+        require(
+            numWhitelisted <= 200,
+            "Cannot whitelist more than 200 addresses"
+        );
+        require(!whitelist[_whitelistee], "Whitelistee already added!");
+        whitelist[_whitelistee] = true;
+        numWhitelisted++;
+    }
+
+    function addToWhitelistMulti(address[] memory _whitelistees)
+        public
+        onlyOwner
+    {
+        require(
+            _whitelistees.length <= 256,
+            "Arrays cannot be over 256 in length"
+        );
+
+        for (uint256 i = 0; i < _whitelistees.length; i++) {
+            addToWhitelist(_whitelistees[i]);
+        }
+    }
+
+    function removeFromWhitelist(address _whitelistee) public onlyOwner {
+        require(numWhitelisted > 0, "Cannot remove if no one is whitelisted");
+        require(whitelist[_whitelistee], "Whitelistee does not exist!");
+        whitelist[_whitelistee] = false;
+        numWhitelisted--;
+    }
+
+    function removeFromWhitelistMulti(address[] memory _whitelistees)
+        public
+        onlyOwner
+    {
+        require(
+            _whitelistees.length <= 256,
+            "Arrays cannot be over 256 in length"
+        );
+
+        for (uint256 i = 0; i < _whitelistees.length; i++) {
+            removeFromWhitelist(_whitelistees[i]);
+        }
+    }
+
+    function initialize(
+        address _token,
+        address _vesting,
+        address[] memory _addresses,
+        uint256[] memory _ends,
+        uint256[] memory _amounts,
+        uint256[] memory _initials
+    ) public onlyOwner {
         require(!initialized, "Already initialized");
+        KuStarter = IERC20RemovePauser(_token);
         vesting = IVesting(_vesting);
+        vesting.submitMulti(_addresses, _ends, _amounts, _initials);
         initialized = true;
     }
 
-    function addPrivateAllocations(address[] memory _addresses, uint256[] memory _ends, uint256[] memory _amounts, uint256[] memory _initials) public onlyOwner {
-        require(seedSale == true, 'Private sale is ended');
-        vesting.submitMulti(_addresses, _ends, _amounts, _initials);
-        seedSale = false;
-    }
-
     receive() external payable {
-        require(seedSale == false, 'Private sale is not ended');
+        require(initialized, "Not initialized");
+        require(whitelist[_msgSender()], "You are not in the whitelist!");
         require(
-            block.timestamp >= presaleStartTimestamp && block.timestamp <= presaleEndTimestamp,
-            'presale is not active'
+            block.timestamp >= presaleStartTimestamp &&
+                block.timestamp <= presaleEndTimestamp,
+            "presale is not active"
         );
-        require(totalDepositedEthBalance + (msg.value) <= hardCapEthAmount, 'deposit limits reached');
         require(
-            deposits[msg.sender] + (msg.value) >= minimumDepositKcsAmount &&
-                deposits[msg.sender] + (msg.value) <= maximumDepositKcsAmount,
-            'incorrect amount'
+            totalDepositedEthBalance + (msg.value) <= hardCapKcsAmount,
+            "deposit limits reached"
+        );
+        require(
+            deposits[_msgSender()] + (msg.value) >= minimumDepositKcsAmount &&
+                deposits[_msgSender()] + (msg.value) <= maximumDepositKcsAmount,
+            "incorrect amount"
         );
 
         uint256 tokenAmount = msg.value * tokensPerKcs;
-        vesting.submit(msg.sender, block.timestamp + 12 weeks, tokenAmount, 0);
+      
+        KuStarter.unpause();
+        vesting.submit(_msgSender(), block.timestamp + 24 weeks, tokenAmount, 20);
+        KuStarter.pause();
+
         totalDepositedEthBalance = totalDepositedEthBalance + (msg.value);
-        deposits[msg.sender] = deposits[msg.sender] + (msg.value);
-        emit Deposited(msg.sender, msg.value);
+        deposits[_msgSender()] = deposits[_msgSender()] + (msg.value);
+        emit Deposited(_msgSender(), msg.value);
     }
 
-    function pause() external onlyOwner whenNotPaused {
-        _pause();
-        emit Paused(msg.sender);
-    }
-
-    function unpause() external onlyOwner whenPaused {
-        _unpause();
-        emit Unpaused(msg.sender);
-    }
-
-    function withdraw() external onlyOwner {
-        require(seedSale == true, 'Private sale is ended');
-        uint256 balance = address(this).balance;
-        payable(msg.sender).transfer(balance);
-    }
-
-    function releaseFunds() external onlyOwner {
+    function recoverERC20(address tokenAddress, uint256 tokenAmount)
+        external
+        onlyOwner
+        returns (bool)
+    {
         require(
-            block.timestamp >= presaleEndTimestamp || totalDepositedEthBalance == hardCapEthAmount,
-            'presale is active'
+            block.timestamp >= lock + (52 weeks),
+            "You can claim LP tokens only after 52 weeks"
         );
-        uint256 liquidityEth = address(this).balance / (2);
-        liquidity.transfer(liquidityEth);
-    }
-
-    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner returns (bool) {
-        require(block.timestamp >= lock + (52 weeks), 'You can claim LP tokens only after 52 weeks');
         bool result = IERC20(tokenAddress).transfer(this.owner(), tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
         return result;
@@ -112,27 +162,44 @@ contract Presale is Ownable, Pausable {
         return totalDepositedEthBalance;
     }
 
-    function saleComplete() external onlyOwner {
-        saleCompleted = block.timestamp;
+    function releaseFunds() external onlyOwner {
+        require(
+            block.timestamp >= presaleEndTimestamp &&
+                totalDepositedEthBalance < hardCapKcsAmount,
+            "Presale is still active, or reached hardcap"
+        );
+        treasury.transfer(address(this).balance);
     }
 
-    function addLiquidity() external {
-        require(block.timestamp < saleCompleted + 15 minutes, 'Listing cannot occur less than 15 minutes before presale finishes');
+    function addLiquidity() external onlyOwner {
+        require(
+            block.timestamp >= presaleEndTimestamp ||
+                totalDepositedEthBalance >= hardCapKcsAmount,
+            "Presale is still active"
+        );
 
-        // Set liquidity lock to now, this will be checked in recoverERC20
+        // Set liquidity lock to now, this will be checked in recoverERC20 and also used for making sure the sale is over
         lock = block.timestamp;
+        KuStarter.removePauser();
 
-        uint256 amountTokenDesired = address(this).balance * 120000;
-        
-        IERC20(address(token)).approve(address(uniswap), amountTokenDesired);
-        uniswap.addLiquidityETH{value: (address(this).balance)}(
-            address(token),
+        uint256 liquidityEth = address(this).balance / 2;
+
+        treasury.transfer(liquidityEth);
+
+        uint256 amountTokenDesired = KuStarter.balanceOf(address(this));
+
+        KuStarter.approve(address(koffeeswap), amountTokenDesired);
+        koffeeswap.addLiquidityKCS{value: (liquidityEth)}(
+            address(KuStarter),
             amountTokenDesired,
             amountTokenDesired,
-            address(this).balance,
+            liquidityEth,
             address(this),
             block.timestamp + 2 hours
         );
     }
 
+    function presaleComplete() external view returns (bool) {
+        return lock != 0;
+    }
 }

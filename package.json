@@ -4,9 +4,11 @@
   "description": "A new and innovative launchpad for projects on the KuCoin Community Chain",
   "main": "hardhat.config.js",
   "scripts": {
-    "deploy": "npx hardhat run --network kucoin_mainnet scripts/deploy.js",
-    "deploy:test": "npx hardhat run --network kucoin_testnet scripts/deploy.js",
-    "test": "npx hardhat test"
+    "deploy": "npx hardhat --network kucoin_mainnet deploy",
+    "deploy:test": "npx hardhat --network kucoin_testnet deploy",
+    "test": "npx hardhat test",
+    "whitelist": "npx hardhat --network kucoin_mainnet whitelist",
+    "whitelist:test": "npx hardhat --network kucoin_testnet whitelist"
   },
   "author": "admin@kustarter.com",
   "license": "MIT",
@@ -14,14 +16,14 @@
     "@openzeppelin/contracts": "^4.2.0",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "dotenv": "^10.0.0",
-    "hardhat": "^2.4.1",
+    "hardhat": "^2.4.3",
     "yesno": "^0.3.1"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.0",
-    "@nomiclabs/hardhat-waffle": "^2.0.0",
-    "chai": "^4.2.0",
-    "ethereum-waffle": "^3.0.0",
-    "ethers": "^5.0.0"
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "chai": "^4.3.4",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.4.1"
   }
 }
