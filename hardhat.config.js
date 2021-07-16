@@ -62,7 +62,7 @@ module.exports = {
       url: 'https://rpc-testnet.kcc.network',
       chainId: 322,
       accounts: {
-        mnemonic: process.env.SEED_PHRASE
+        mnemonic: process.env.TEST_SEED_PHRASE
       }
     }
   },
