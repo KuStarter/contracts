@@ -5,4 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IERC20RemovePauser is IERC20 {
     function removePauser() external;
+
+    function pause() external;
+    function unpause() external;
 }

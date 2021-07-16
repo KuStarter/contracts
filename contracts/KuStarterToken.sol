@@ -6,19 +6,24 @@ import "./interfaces/IERC20RemovePauser.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 
 contract KuStarterToken is ERC20Pausable, IERC20RemovePauser {
-
     event PauserRemoved();
 
     address public pauser;
     address public presale;
 
     modifier onlyPauser() {
-        require(pauser == _msgSender() && address(0) != _msgSender(), "KuStarterToken: caller is not the pauser");
+        require(
+            pauser == _msgSender() || presale == _msgSender() && address(0) != _msgSender(),
+            "KuStarterToken: caller is not the pauser"
+        );
         _;
     }
 
     modifier onlyPresale() {
-        require(presale == _msgSender(), "KuStarterToken: caller is not the presale contract");
+        require(
+            presale == _msgSender(),
+            "KuStarterToken: caller is not the presale contract"
+        );
         _;
     }
 
@@ -44,18 +49,18 @@ contract KuStarterToken is ERC20Pausable, IERC20RemovePauser {
         pauser = _msgSender();
     }
 
-    function pause() onlyPauser external {
+    function pause() external override onlyPauser {
         _pause();
     }
 
-    function unpause() onlyPauser external {
+    function unpause() external override onlyPauser {
         _unpause();
     }
 
     /**
      * This allows our presale contract to remove the pausing functionality once the presale is over
      */
-    function removePauser() onlyPresale external override {
+    function removePauser() external override onlyPresale {
         pauser = address(0);
         _unpause();
         emit PauserRemoved();

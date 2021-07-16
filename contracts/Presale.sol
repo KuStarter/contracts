@@ -3,9 +3,9 @@ pragma solidity ^0.8.2;
 
 import "./interfaces/IVesting.sol";
 import "./interfaces/IERC20RemovePauser.sol";
+import "./interfaces/IKoffeeSwapRouter.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "hardhat/console.sol";
 
@@ -21,13 +21,13 @@ contract Presale is Ownable {
     uint256 public presaleStartTimestamp;
     uint256 public presaleEndTimestamp;
     uint256 public tokensPerKcs;
-    uint256 public hardCapEthAmount;
+    uint256 public hardCapKcsAmount;
     uint256 public totalDepositedEthBalance;
     uint256 public minimumDepositKcsAmount;
     uint256 public maximumDepositKcsAmount;
     IERC20RemovePauser public KuStarter;
 
-    IUniswapV2Router02 private uniswap;
+    IKoffeeSwapRouter private koffeeswap;
     uint256 public lock = 0;
 
     mapping(address => uint256) public deposits;
@@ -43,12 +43,12 @@ contract Presale is Ownable {
         uint256 _presaleStartTimestamp,
         uint256 _presaleEndTimestamp
     ) {
-        uniswap = IUniswapV2Router02(
+        koffeeswap = IKoffeeSwapRouter(
             0xc0fFee0000C824D24E0F280f1e4D21152625742b
-        ); // TODO: Choose KCC DEX, using KoffewSwap for now, NB: KoffeeSwap broke the ABI and uses addLiquidityKCS for example (https://github.com/KoffeeSwap/koffeeswap-contracts/blob/master/router/KoffeeSwapRouter.sol)
+        );
         treasury = _treasury;
         tokensPerKcs = _tokensPerKcs;
-        hardCapEthAmount = _hardCapKcs;
+        hardCapKcsAmount = _hardCapKcs;
         minimumDepositKcsAmount = _minimumDepositKcsAmount;
         maximumDepositKcsAmount = _maximumDepositKcsAmount;
         presaleStartTimestamp = _presaleStartTimestamp;
@@ -124,7 +124,7 @@ contract Presale is Ownable {
             "presale is not active"
         );
         require(
-            totalDepositedEthBalance + (msg.value) <= hardCapEthAmount,
+            totalDepositedEthBalance + (msg.value) <= hardCapKcsAmount,
             "deposit limits reached"
         );
         require(
@@ -134,7 +134,11 @@ contract Presale is Ownable {
         );
 
         uint256 tokenAmount = msg.value * tokensPerKcs;
+      
+        KuStarter.unpause();
         vesting.submit(_msgSender(), block.timestamp + 24 weeks, tokenAmount, 20);
+        KuStarter.pause();
+
         totalDepositedEthBalance = totalDepositedEthBalance + (msg.value);
         deposits[_msgSender()] = deposits[_msgSender()] + (msg.value);
         emit Deposited(_msgSender(), msg.value);
@@ -161,7 +165,7 @@ contract Presale is Ownable {
     function releaseFunds() external onlyOwner {
         require(
             block.timestamp >= presaleEndTimestamp &&
-                totalDepositedEthBalance < hardCapEthAmount,
+                totalDepositedEthBalance < hardCapKcsAmount,
             "Presale is still active, or reached hardcap"
         );
         treasury.transfer(address(this).balance);
@@ -170,7 +174,7 @@ contract Presale is Ownable {
     function addLiquidity() external onlyOwner {
         require(
             block.timestamp >= presaleEndTimestamp ||
-                totalDepositedEthBalance >= hardCapEthAmount,
+                totalDepositedEthBalance >= hardCapKcsAmount,
             "Presale is still active"
         );
 
@@ -184,8 +188,8 @@ contract Presale is Ownable {
 
         uint256 amountTokenDesired = KuStarter.balanceOf(address(this));
 
-        KuStarter.approve(address(uniswap), amountTokenDesired);
-        uniswap.addLiquidityETH{value: (liquidityEth)}(
+        KuStarter.approve(address(koffeeswap), amountTokenDesired);
+        koffeeswap.addLiquidityKCS{value: (liquidityEth)}(
             address(KuStarter),
             amountTokenDesired,
             amountTokenDesired,

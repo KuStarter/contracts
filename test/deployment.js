@@ -20,8 +20,6 @@ describe('Deployment of KUST', function () {
   let contracts;
 
   before(async function () {
-    // TODO: Maybe put the presale in the future and make sure it cannot be used yet?
-    // Or that should really be directly in a presale test I suppose
     process.env.PRESALE_START_TIME = time.getTime() + time.hour;
     process.env.PRESALE_END_TIME = (parseInt(process.env.PRESALE_START_TIME) + time.day).toString();
     contracts = await hre.run("deploy", { y: true });
@@ -63,48 +61,82 @@ describe('Deployment of KUST', function () {
   });
 
   it('user not yet whitelisted', async function () {
-    await expect(user.sendTransaction( {
+    await expect(user.sendTransaction({
       to: contracts.presale.address,
       value: parseEther("1")
     }))
-    .to.be.revertedWith("You are not in the whitelist!");
+      .to.be.revertedWith("You are not in the whitelist!");
   });
-  
+
   describe('Whitelisting', function () {
     before(async function () {
       process.env.PRESALE_CONTRACT_ADDRESS = contracts.presale.address;
-      
+
       const file = `${__dirname}/res/test-whitelist.txt`;
       const data = user.address + "\n";
       fs.writeFileSync(file, data);
-      
+
       await hre.run("whitelist", { y: true, action: 'add', file });
     });
 
     it('presale not started yet', async function () {
-      await expect(user.sendTransaction( {
+      await expect(user.sendTransaction({
         to: contracts.presale.address,
         value: parseEther("1")
       }))
-      .to.be.revertedWith("presale is not active");
+        .to.be.revertedWith("presale is not active");
     });
 
     it('attacker still not whitelisted', async function () {
-      await expect(attacker.sendTransaction( {
+      await expect(attacker.sendTransaction({
         to: contracts.presale.address,
         value: parseEther("1")
       }))
-      .to.be.revertedWith("You are not in the whitelist!");
+        .to.be.revertedWith("You are not in the whitelist!");
     });
-  
-  });
 
-  // it('presale started after 1 hour', async function () {
-  //   await time.increaseTime(time.hour, 1, ethers);
-  //   await expect(attacker.sendTransaction( {
-  //     to: contracts.presale.address,
-  //     value: parseEther("1")
-  //   }))
-  //   .to.be.revertedWith("presale is not active");
-  // });
+    it('presale started after 1 hour', async function () {
+      await time.increaseTime(time.hour, 1, ethers);
+
+      await user.sendTransaction({
+        to: contracts.presale.address,
+        value: parseEther("50")
+      });
+    });
+
+    it('has tokens, but cannot send them', async function () {
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("400"));
+
+      await expect(contracts.kuStarterToken.transfer(attacker.address, parseEther("1")))
+        .to.be.revertedWith("ERC20Pausable: token transfer while paused");
+    });
+
+
+    it('liquidity cannot be added until presale is over', async function () {
+      await expect(contracts.presale.addLiquidity())
+        .to.be.revertedWith("Presale is still active");
+    });
+
+    it('presale will end and liquidity can be added', async function () {
+      await time.increaseTime(time.hour, 24, ethers);
+
+      await expect(contracts.presale.connect(attacker).addLiquidity())
+        .to.be.revertedWith("Ownable: caller is not the owner");
+      
+      await contracts.presale.addLiquidity();
+
+      //TODO: Check with some tests against Koffeeswap
+      // https://docs.koffeeswap.finance/contracts/exchange-contracts/router
+    });
+
+    it('now can send their tokens', async function () {
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("400"));
+
+      await contracts.kuStarterToken.connect(user).transfer(attacker.address, parseEther("1"));
+
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("399"));
+      expect(await contracts.kuStarterToken.balanceOf(attacker.address)).to.be.eq(parseEther("1"));
+    });
+    
+  });
 });

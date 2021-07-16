@@ -1,3 +1,5 @@
+// due to a lovely waffle and ethers bug https://github.com/EthWorks/Waffle/issues/382 
+// these tests must be run first, so we have a 0 at the start of the test file name
 const { expect } = require("chai");
 const { parseEther } = ethers.utils;
 

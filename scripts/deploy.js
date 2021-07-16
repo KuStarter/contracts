@@ -41,7 +41,7 @@ async function deployPresale(ethers, contracts) {
     40,
     parseEther("10000"),
     parseEther("25"),
-    parseEther("25"),
+    parseEther("50"),
     process.env.PRESALE_START_TIME,
     process.env.PRESALE_END_TIME);
 
