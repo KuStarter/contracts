@@ -1,35 +1,14 @@
-// due to a lovely waffle and ethers bug https://github.com/EthWorks/Waffle/issues/382 
-// these tests must be run first, so we have a 0 at the start of the test file name
 const { expect } = require("chai");
 const { parseEther } = ethers.utils;
+
+const time = new (require("../utils/time"))(ethers);
 
 describe('TokenVesting', function () {
   let erc20, tokenVesting, deployTime, treasury, user1, user2, user3, user4, renouncer, attacker;
 
-  // rough year, note these do not need to be accurate
-  const minute = 60;
-  const hour = minute * 60;
-  const roughDay = hour * 24;
-  const roughMonth = roughDay * 30;
-  const roughYear = roughMonth * 12;
-
-  // keep track of the amount by which the internal evm is out of sync with current date
-  let incrementedTime = 0;
-  const getLocalTime = function () {
-    const now = Math.floor(new Date().getTime() / 1000);
-    return now + incrementedTime;
-  };
-
-  const increaseTime = async function (timeSpan, number) {
-    const toIncrememt = timeSpan * number;
-    incrementedTime += toIncrememt;
-    await network.provider.send('evm_increaseTime', [toIncrememt]);
-    await network.provider.send('evm_mine');
-  };
-
   const deployVesting = async function (increment = 0) {
     const TokenVesting = await ethers.getContractFactory('TokenVesting');
-    deployTime = getLocalTime() + increment;
+    deployTime = await time.getBlockchainTime(ethers) + increment;
     return await TokenVesting.deploy(treasury.address, treasury.address, deployTime, erc20.address);
   };
 
@@ -54,17 +33,17 @@ describe('TokenVesting', function () {
       });
 
       it('claimable should incrementally fill', async function () {
-        await increaseTime(minute, 20);
+        await time.increaseTime(time.minute, 20);
         expect(await tokenVesting.getAvailable(user1.address)).to.be.within(parseEther('0.32'), parseEther('0.34'));
       });
 
       it('claimable should approach 1eth, slightly less due to time math', async function () {
-        await increaseTime(minute, 40);
+        await time.increaseTime(time.minute, 40);
         expect(await tokenVesting.getAvailable(user1.address)).to.be.within(parseEther('0.995'), parseEther('1'));
       });
 
       it('claiming entire balance should transfer', async function () {
-        await increaseTime(minute, 1);
+        await time.increaseTime(time.minute, 1);
         const toClaim = await tokenVesting.getAvailable(user1.address);
         await tokenVesting.connect(user1).claimTokens(toClaim);
         expect(await erc20.balanceOf(user1.address)).to.be.eq(parseEther('1'));
@@ -75,7 +54,7 @@ describe('TokenVesting', function () {
       });
 
       it('user should no longer be able to claim', async function () {
-        await increaseTime(hour, 1);
+        await time.increaseTime(time.hour, 1);
         await expect(tokenVesting.connect(user1).claimTokens('1')).to.be.revertedWith('Balance not sufficient');
       });
     });
@@ -94,17 +73,17 @@ describe('TokenVesting', function () {
       });
 
       it('claimable should incrementally fill', async function () {
-        await increaseTime(minute, 20);
+        await time.increaseTime(time.minute, 20);
         expect(await tokenVesting.getAvailable(user1.address)).to.be.gt(parseEther('0.25'));
       });
 
       it('claimable balance should approach 0.8eth, slightly less due to time math', async function () {
-        await increaseTime(minute, 40);
+        await time.increaseTime(time.minute, 40);
         expect(await tokenVesting.getAvailable(user1.address)).to.be.gt(parseEther('0.79'));
       });
 
       it('claiming entire balance should transfer', async function () {
-        await increaseTime(minute, 1);
+        await time.increaseTime(time.minute, 1);
         const toClaim = await tokenVesting.getAvailable(user1.address);
         await tokenVesting.connect(user1).claimTokens(toClaim);
         expect(await erc20.balanceOf(user1.address)).to.be.eq(parseEther('2'));
@@ -115,7 +94,7 @@ describe('TokenVesting', function () {
       });
 
       it('user should no longer be able to claim', async function () {
-        await increaseTime(hour, 1);
+        await time.increaseTime(time.hour, 1);
         await expect(tokenVesting.connect(user1).claimTokens('1')).to.be.revertedWith('Balance not sufficient');
       });
     });
@@ -125,7 +104,7 @@ describe('TokenVesting', function () {
         tokenVesting = await deployVesting();
         await erc20.connect(treasury).approve(tokenVesting.address, parseEther('60'));
         await tokenVesting.connect(treasury).deposit(parseEther('60'));
-        await tokenVesting.connect(treasury).submit(user2.address, deployTime + roughYear, parseEther('60'), 0);
+        await tokenVesting.connect(treasury).submit(user2.address, deployTime + time.roughYear, parseEther('60'), 0);
       });
 
       it('claimable should be 0', async function () {
@@ -133,7 +112,7 @@ describe('TokenVesting', function () {
       });
 
       it('token balance should incrementally fill over 2 months', async function () {
-        await increaseTime(roughMonth, 2);
+        await time.increaseTime(time.roughMonth, 2);
 
         expect(await tokenVesting.getAvailable(user2.address)).to.be.within(parseEther('9.9'), parseEther('10.1'));
       });
@@ -145,12 +124,12 @@ describe('TokenVesting', function () {
       });
 
       it('token balance should incrementally fill over another 10 months', async function () {
-        await increaseTime(roughMonth, 10);
+        await time.increaseTime(time.roughMonth, 10);
         expect(await tokenVesting.getAvailable(user2.address)).to.be.within(parseEther('54.9'), parseEther('55'));
       });
 
       it('claiming entire balance should transfer, ensure user afterwards is zero', async function () {
-        await increaseTime(roughMonth, 1);
+        await time.increaseTime(time.roughMonth, 1);
         await tokenVesting.connect(user2).claimTokens(parseEther('54.99'));
         expect(await erc20.balanceOf(user2.address)).to.be.gt(parseEther('55.9'));
       });
@@ -160,7 +139,7 @@ describe('TokenVesting', function () {
       });
 
       it('user should no longer be able to claim', async function () {
-        await increaseTime(roughMonth, 12);
+        await time.increaseTime(time.roughMonth, 12);
         await expect(tokenVesting.connect(user2).claimTokens(parseEther('0.1'))).to.be.revertedWith(
           'Balance not sufficient'
         );
@@ -180,7 +159,7 @@ describe('TokenVesting', function () {
       });
 
       it('token balance should incrementally fill', async function () {
-        await increaseTime(minute, 20);
+        await time.increaseTime(time.minute, 20);
         expect(await tokenVesting.getAvailable(user3.address)).to.be.gt(parseEther('0.2'));
       });
 
@@ -195,7 +174,7 @@ describe('TokenVesting', function () {
       });
 
       it('user should no longer be able to claim', async function () {
-        await increaseTime(hour, 1);
+        await time.increaseTime(time.hour, 1);
         await expect(tokenVesting.connect(user3).claimTokens('1')).to.be.revertedWith('Not a contributor');
       });
     });
@@ -254,7 +233,7 @@ describe('TokenVesting', function () {
   describe('Future vesting', function () {
     describe('core functionality, single-claim scenario, but vesting starts in 2 weeks', function () {
       before(async function () {
-        tokenVesting = await deployVesting(roughDay * 14);
+        tokenVesting = await deployVesting(time.week * 2);
         await erc20.connect(treasury).approve(tokenVesting.address, parseEther('1'));
         await tokenVesting.connect(treasury).deposit(parseEther('1'));
         await tokenVesting.connect(treasury).submit(user4.address, deployTime + 3600, parseEther('1'), 0);
@@ -266,26 +245,26 @@ describe('TokenVesting', function () {
       });
 
       it('even after 1 hour, nothing should be different', async function () {
-        await increaseTime(hour, 1);
+        await time.increaseTime(time.hour, 1);
         expect(await erc20.balanceOf(user4.address)).to.be.eq(parseEther('0'));
         expect(await tokenVesting.getAvailable(user4.address)).to.be.eq(parseEther('0'));
       });
 
       it('claimable should incrementally fill after initial 2 weeks', async function () {
-        await increaseTime(hour, 23); // needed because of the hour from above
-        await increaseTime(roughDay, 13);
+        await time.increaseTime(time.hour, 23); // needed because of the time.hour from above
+        await time.increaseTime(time.day, 13);
 
-        await increaseTime(minute, 20);
+        await time.increaseTime(time.minute, 20);
         expect(await tokenVesting.getAvailable(user4.address)).to.be.gt(parseEther('0.2'));
       });
 
       it('claimable should approach 1eth, slightly less due to time math', async function () {
-        await increaseTime(minute, 40);
+        await time.increaseTime(time.minute, 40);
         expect(await tokenVesting.getAvailable(user4.address)).to.be.gt(parseEther('0.995'));
       });
 
       it('claiming entire balance should transfer', async function () {
-        await increaseTime(minute, 1);
+        await time.increaseTime(time.minute, 1);
         const toClaim = await tokenVesting.getAvailable(user4.address);
         await tokenVesting.connect(user4).claimTokens(toClaim);
         expect(await erc20.balanceOf(user4.address)).to.be.eq(parseEther('1'));
@@ -296,14 +275,14 @@ describe('TokenVesting', function () {
       });
 
       it('user should no longer be able to claim', async function () {
-        await increaseTime(hour, 1);
+        await time.increaseTime(time.hour, 1);
         await expect(tokenVesting.connect(user4).claimTokens('1')).to.be.revertedWith('Balance not sufficient');
       });
     });
 
     describe('core functionality, single-claim scenario, initial 20%', function () {
       before(async function () {
-        tokenVesting = await deployVesting(roughDay * 14);
+        tokenVesting = await deployVesting(time.day * 14);
         await erc20.connect(treasury).approve(tokenVesting.address, parseEther('1'));
         await tokenVesting.connect(treasury).deposit(parseEther('1'));
         await tokenVesting.connect(treasury).submit(user4.address, deployTime + 3600, parseEther('1'), 20);
@@ -315,26 +294,26 @@ describe('TokenVesting', function () {
       });
 
       it('even after 1 hour, nothing should be different', async function () {
-        await increaseTime(hour, 1);
+        await time.increaseTime(time.hour, 1);
         expect(await erc20.balanceOf(user4.address)).to.be.eq(parseEther('1.2'));
         expect(await tokenVesting.getAvailable(user4.address)).to.be.eq(parseEther('0'));
       });
 
       it('claimable should incrementally fill after initial 2 weeks', async function () {
-        await increaseTime(hour, 23); // needed because of the hour from above
-        await increaseTime(roughDay, 13);
+        await time.increaseTime(time.hour, 23); // needed because of the time.hour from above
+        await time.increaseTime(time.day, 13);
 
-        await increaseTime(minute, 20);
+        await time.increaseTime(time.minute, 20);
         expect(await tokenVesting.getAvailable(user4.address)).to.be.gt(parseEther('0.25'));
       });
 
       it('claimable balance should approach 0.8eth, slightly less due to time math', async function () {
-        await increaseTime(minute, 40);
+        await time.increaseTime(time.minute, 40);
         expect(await tokenVesting.getAvailable(user4.address)).to.be.gt(parseEther('0.79'));
       });
 
       it('claiming entire balance should transfer', async function () {
-        await increaseTime(minute, 1);
+        await time.increaseTime(time.minute, 1);
         const toClaim = await tokenVesting.getAvailable(user4.address);
         await tokenVesting.connect(user4).claimTokens(toClaim);
         expect(await erc20.balanceOf(user4.address)).to.be.eq(parseEther('2'));
@@ -345,7 +324,7 @@ describe('TokenVesting', function () {
       });
 
       it('user should no longer be able to claim', async function () {
-        await increaseTime(hour, 1);
+        await time.increaseTime(time.hour, 1);
         await expect(tokenVesting.connect(user4).claimTokens('1')).to.be.revertedWith('Balance not sufficient');
       });
     });

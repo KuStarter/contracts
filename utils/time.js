@@ -1,23 +1,25 @@
-// All time in seconds cause Ethereum
-const minute = 60;
-const hour = minute * 60;
-const day = hour * 24;
-const week = day * 7;
-const roughMonth = day * 30;
-const roughYear = roughMonth * 12;
+class TimeUtil {
+  // All time in seconds cause Ethereum
+  minute = 60;
+  hour = this.minute * 60;
+  day = this.hour * 24;
+  week = this.day * 7;
+  roughMonth = this.day * 30;
+  roughYear = this.roughMonth * 12;
 
-const getBlockchainTime = async function (ethers) {
-  const block = await ethers.provider.getBlock("latest");
-  return block.timestamp;
-};
+  constructor(ethers) {
+    this.ethers = ethers;
+  }
 
-const getTime = function () {
-  return Math.floor(new Date().getTime() / 1000);
-};
+  async increaseTime(timeSpan, number) {
+    await this.ethers.provider.send("evm_increaseTime", [timeSpan * number]);
+    await this.ethers.provider.send("evm_mine");
+  }
 
-const increaseTime = async function (timeSpan, number, ethers) {
-  await ethers.provider.send('evm_increaseTime', [timeSpan * number]);
-  await ethers.provider.send('evm_mine');
-};
+  async getBlockchainTime() {
+    const block = await ethers.provider.getBlock("latest");
+    return block.timestamp + 15;
+  }
+}
 
-module.exports = { minute, hour, day, week, roughMonth, roughYear, getBlockchainTime, getTime, increaseTime };
+module.exports = TimeUtil;

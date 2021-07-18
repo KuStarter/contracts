@@ -2,7 +2,7 @@ const fs = require('fs');
 const { expect } = require("chai");
 const { parseEther } = ethers.utils;
 
-const time = require("../utils/time");
+const time = new (require("../utils/time"))(ethers);
 
 /**
  * This is a full e2e test of what the deploy scripts do and beyond, all the way to trading $KUST on a DEX.
@@ -20,8 +20,14 @@ describe('Deployment of KUST', function () {
   let contracts;
 
   before(async function () {
-    process.env.PRESALE_START_TIME = time.getTime() + time.hour;
-    process.env.PRESALE_END_TIME = (parseInt(process.env.PRESALE_START_TIME) + time.day).toString();
+    const presaleStartTime = await time.getBlockchainTime() + time.hour;
+    process.env.PRESALE_START_TIME = (presaleStartTime).toString();
+    process.env.PRESALE_END_TIME = (presaleStartTime + time.day).toString();
+    process.env.VESTING_START_TIME = (presaleStartTime + 2 * time.week).toString();
+    process.env.SEED_VESTING_END_TIME = (presaleStartTime + 36 * time.week).toString();
+    process.env.MARKETING_VESTING_END_TIME = (presaleStartTime + 12 * time.week).toString();
+    process.env.DEVELOPMENT_1_VESTING_END_TIME = (presaleStartTime + 12 * time.week).toString();
+    process.env.DEVELOPMENT_2_VESTING_END_TIME = (presaleStartTime + 52 * time.week).toString();
     contracts = await hre.run("deploy", { y: true });
 
     [deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury, user, attacker] = await ethers.getSigners();
@@ -96,7 +102,7 @@ describe('Deployment of KUST', function () {
     });
 
     it('presale started after 1 hour', async function () {
-      await time.increaseTime(time.hour, 1, ethers);
+      await time.increaseTime(time.hour, 1);
 
       await user.sendTransaction({
         to: contracts.presale.address,
@@ -118,7 +124,7 @@ describe('Deployment of KUST', function () {
     });
 
     it('presale will end and liquidity can be added', async function () {
-      await time.increaseTime(time.hour, 24, ethers);
+      await time.increaseTime(time.hour, 24);
 
       await expect(contracts.presale.connect(attacker).addLiquidity())
         .to.be.revertedWith("Ownable: caller is not the owner");

@@ -2,11 +2,11 @@ const { parseEther } = require("ethers/lib/utils");
 const yesno = require("yesno");
 
 const utils = require("../utils");
-const time = require("../utils/time");
 
 let deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury;
 
 async function deployTimelocks(ethers, contracts) {
+  const time = new (require("../utils/time"))(ethers);
   // DAOFundTimelock
   const DAOFundTimelock = await ethers.getContractFactory("TimelockController");
   const daoFundTimelock = await DAOFundTimelock.deploy(time.week, [proposer], [executor]);
