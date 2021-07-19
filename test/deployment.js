@@ -1,23 +1,22 @@
 const fs = require('fs');
 const { expect } = require("chai");
-const { parseEther } = ethers.utils;
+const { parseEther, getCreate2Address } = ethers.utils;
+const KoffeeswapPairABI = require("@uniswap/v2-core/build/IUniswapV2Pair.json").abi;
 
+const utils = require("../utils");
 const time = new (require("../utils/time"))(ethers);
+const KoffeeswapRouterABI = require("../utils/KoffeeSwapRouter.abi.json");
 
 /**
  * This is a full e2e test of what the deploy scripts do and beyond, all the way to trading $KUST on a DEX.
  * It also attempts to attack at different points within that workflow.
  * Uses the exact same code as in ../scripts/deploy.js
- * 
- * TODO: add attack vectors
- * 
- * TODO: maybe break the deployment into different stages and then run tests at each stage? 
- * currently we run the tests after entire deployment
  */
 describe('Deployment of KUST', function () {
 
-  let deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury, user, attacker;
-  let contracts;
+  let deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury, user, attacker, trader;
+  let contracts, koffeeswap, wkcsAddress, pair;
+  let deadline;
 
   before(async function () {
     const presaleStartTime = await time.getBlockchainTime() + time.hour;
@@ -30,7 +29,13 @@ describe('Deployment of KUST', function () {
     process.env.DEVELOPMENT_2_VESTING_END_TIME = (presaleStartTime + 52 * time.week).toString();
     contracts = await hre.run("deploy", { y: true });
 
-    [deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury, user, attacker] = await ethers.getSigners();
+    [deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury, user, attacker, trader] = await ethers.getSigners();
+
+    koffeeswap = new ethers.Contract("0xc0fFee0000C824D24E0F280f1e4D21152625742b", KoffeeswapRouterABI, deployer);
+    wkcsAddress = await koffeeswap.WKCS();
+    const pairAddress = utils.computeKoffeeSwapPairAddress(await koffeeswap.factory(), wkcsAddress, contracts.kuStarterToken.address, ethers);
+    pair = new ethers.Contract(pairAddress, KoffeeswapPairABI, deployer);
+    deadline = await time.getBlockchainTime() + 604800;
   });
 
   it('can call the deployed contracts', async function () {
@@ -44,7 +49,9 @@ describe('Deployment of KUST', function () {
       contracts.lpMiningRewardsTimelock.address,
       contracts.marketingVesting.address,
       contracts.developmentVesting1.address,
-      contracts.developmentVesting2.address
+      contracts.developmentVesting2.address,
+      contracts.presale.address,
+      saleTreasury.address
     ];
 
     const amounts = [
@@ -54,16 +61,13 @@ describe('Deployment of KUST', function () {
       parseEther("500000"),
       parseEther("500000"),
       parseEther("500000"),
+      parseEther("225000"),
+      "0",
     ];
 
     for (let i = 0; i < addresses.length; i++) {
       expect(await contracts.kuStarterToken.balanceOf(addresses[i])).to.be.eq(amounts[i]);
     }
-  });
-
-  it('cannot be transferred yet', async function () {
-    await expect(contracts.kuStarterToken.connect(saleTreasury).transfer(attacker.address, 1))
-      .to.be.revertedWith("ERC20Pausable: token transfer while paused");
   });
 
   it('user not yet whitelisted', async function () {
@@ -101,8 +105,26 @@ describe('Deployment of KUST', function () {
         .to.be.revertedWith("You are not in the whitelist!");
     });
 
+
+    it('attacker still not whitelisted', async function () {
+      expect(await contracts.presale.whitelist(attacker.address)).to.be.eq(false);
+      await expect(attacker.sendTransaction({
+        to: contracts.presale.address,
+        value: parseEther("1")
+      }))
+        .to.be.revertedWith("You are not in the whitelist!");
+
+      await contracts.presale.addToWhitelist(attacker.address);
+      expect(await contracts.presale.whitelist(attacker.address)).to.be.eq(true);
+
+      await contracts.presale.removeFromWhitelist(attacker.address);
+      expect(await contracts.presale.whitelist(attacker.address)).to.be.eq(false);
+    });
+
     it('presale started after 1 hour', async function () {
       await time.increaseTime(time.hour, 1);
+
+      expect(await contracts.presale.whitelist(user.address)).to.be.eq(true);
 
       await user.sendTransaction({
         to: contracts.presale.address,
@@ -117,7 +139,6 @@ describe('Deployment of KUST', function () {
         .to.be.revertedWith("ERC20Pausable: token transfer while paused");
     });
 
-
     it('liquidity cannot be added until presale is over', async function () {
       await expect(contracts.presale.addLiquidity())
         .to.be.revertedWith("Presale is still active");
@@ -128,11 +149,14 @@ describe('Deployment of KUST', function () {
 
       await expect(contracts.presale.connect(attacker).addLiquidity())
         .to.be.revertedWith("Ownable: caller is not the owner");
-      
-      await contracts.presale.addLiquidity();
 
-      //TODO: Check with some tests against Koffeeswap
-      // https://docs.koffeeswap.finance/contracts/exchange-contracts/router
+      const bal = await saleTreasury.getBalance();
+      await contracts.presale.addLiquidity();
+      expect(await saleTreasury.getBalance()).to.be.eq(bal.add(parseEther("25")));
+    });
+
+    it('liquidity cannot be added twice', async function () {
+      await expect(contracts.presale.addLiquidity()).to.be.revertedWith("Presale is already completed");
     });
 
     it('now can send their tokens', async function () {
@@ -143,6 +167,51 @@ describe('Deployment of KUST', function () {
       expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("399"));
       expect(await contracts.kuStarterToken.balanceOf(attacker.address)).to.be.eq(parseEther("1"));
     });
-    
+
+    it('traders can buy and sell on Koffeeswap', async function () {
+      expect(await contracts.kuStarterToken.balanceOf(trader.address)).to.be.eq(parseEther("0"));
+
+      let amountOut = (
+        await koffeeswap.connect(trader).getAmountsOut(parseEther("5"), [wkcsAddress, contracts.kuStarterToken.address])
+      )[1];
+      expect(amountOut).to.be.gt(parseEther("10"));
+
+      await koffeeswap.connect(trader).swapKCSForExactTokens(amountOut, [wkcsAddress, contracts.kuStarterToken.address], trader.address, deadline, {
+        value: parseEther("5")
+      });
+
+      let balance = amountOut;
+      expect(await contracts.kuStarterToken.balanceOf(trader.address)).to.be.eq(balance);
+
+      amountOut = (
+        await koffeeswap.connect(trader).getAmountsOut(parseEther("10"), [contracts.kuStarterToken.address, wkcsAddress])
+      )[1];
+
+      await contracts.kuStarterToken.connect(trader).approve(koffeeswap.address, parseEther("10"));
+      await koffeeswap.connect(trader).swapExactTokensForKCS(parseEther("10"), amountOut, [contracts.kuStarterToken.address, wkcsAddress], trader.address, deadline);
+
+      balance = balance.sub(parseEther("10"));
+      expect(await contracts.kuStarterToken.balanceOf(trader.address)).to.be.eq(balance);
+    });
+
+    it('users cannot claim tokens for two weeks', async function () {
+      await time.increaseTime(time.week, 1);
+
+      expect(await contracts.saleVesting.connect(user).getAvailable(user.address)).to.be.eq("0");
+    });
+
+    it('users can claim tokens after two weeks and 1 day', async function () {
+      await time.increaseTime(time.week, 1);
+      await time.increaseTime(time.day, 1);
+
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("399"));
+      const available = await contracts.saleVesting.connect(user).getAvailable(user.address);
+      expect(available).to.be.gt(parseEther("20"));
+
+      const balance = await contracts.kuStarterToken.balanceOf(user.address);
+      await contracts.saleVesting.connect(user).claimTokens(available)
+
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(balance.add(available));
+    });
   });
 });

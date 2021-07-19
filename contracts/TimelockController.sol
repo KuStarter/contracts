@@ -11,6 +11,6 @@ contract KuStarterTimelockController is TimelockController {
         address[] memory executors
     ) TimelockController(minDelay, proposers, executors) {
       // This is really just needed to get the TimelockController artficat into the project,
-      // we use the standard one from OpenZeppelin
+      // we use the standard one from OpenZeppelin in our deploy script
     }
 }
