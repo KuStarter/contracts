@@ -14,8 +14,6 @@ const checkEnvVars = (...envVars) => {
 
 const computeKoffeeSwapPairAddress = (factoryAddress, tokenA, tokenB, ethers) => {
   const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA];
-  console.log(token0);
-  console.log(token1);
 
   return ethers.utils.getCreate2Address(
     factoryAddress,

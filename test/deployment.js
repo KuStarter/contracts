@@ -27,7 +27,7 @@ describe('Deployment of KUST', function () {
     process.env.MARKETING_VESTING_END_TIME = (presaleStartTime + 12 * time.week).toString();
     process.env.DEVELOPMENT_1_VESTING_END_TIME = (presaleStartTime + 12 * time.week).toString();
     process.env.DEVELOPMENT_2_VESTING_END_TIME = (presaleStartTime + 52 * time.week).toString();
-    contracts = await hre.run("deploy", { y: true });
+    contracts = await hre.run("deploy", { y: true, s: true });
 
     [deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury, user, attacker, trader] = await ethers.getSigners();
 
@@ -86,7 +86,7 @@ describe('Deployment of KUST', function () {
       const data = user.address + "\n";
       fs.writeFileSync(file, data);
 
-      await hre.run("whitelist", { y: true, action: 'add', file });
+      await hre.run("whitelist", { y: true, s: true, action: 'add', file });
     });
 
     it('presale not started yet', async function () {
@@ -213,5 +213,6 @@ describe('Deployment of KUST', function () {
 
       expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(balance.add(available));
     });
+
   });
 });

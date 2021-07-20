@@ -2,8 +2,29 @@ const { parseEther } = require("ethers/lib/utils");
 const yesno = require("yesno");
 
 const utils = require("../utils");
+const explorerUrl = "https://explorer.kcc.io/en/tx";
 
 let deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury;
+
+const txs = [];
+
+async function addToTXList(title, txHash) {
+  txs.push({ title, txHash });
+}
+
+let shouldLog = true;
+
+function log(message) {
+  if(shouldLog) {
+    console.log(message);
+  }
+}
+
+function warn(message) {
+  if(shouldLog) {
+    console.warn(message);
+  }
+}
 
 async function deployTimelocks(ethers, contracts) {
   const time = new (require("../utils/time"))(ethers);
@@ -12,24 +33,27 @@ async function deployTimelocks(ethers, contracts) {
   const daoFundTimelock = await DAOFundTimelock.deploy(time.week, [proposer], [executor]);
 
   await daoFundTimelock.deployed();
-  console.log(` > DAOFundTimelock deployed to: ${daoFundTimelock.address}`);
+  log(` > DAOFundTimelock deployed to: ${daoFundTimelock.address}`);
   contracts.daoFundTimelock = daoFundTimelock;
+  addToTXList("deploying DAOFundTimelock with lock of 7 days", daoFundTimelock.deployTransaction.hash);
 
   // StakingRewardsTimelock
   const StakingRewardsTimelock = await ethers.getContractFactory("TimelockController");
   const stakingRewardsTimelock = await StakingRewardsTimelock.deploy(4 * time.day, [proposer], [executor]);
 
   await stakingRewardsTimelock.deployed();
-  console.log(` > StakingRewardsTimelock deployed to: ${stakingRewardsTimelock.address}`);
+  log(` > StakingRewardsTimelock deployed to: ${stakingRewardsTimelock.address}`);
   contracts.stakingRewardsTimelock = stakingRewardsTimelock;
+  addToTXList("deploying StakingRewardsTimelock with lock of 4 days", stakingRewardsTimelock.deployTransaction.hash);
 
   // LPMiningRewardsTimelock
   const LPMiningRewardsTimelock = await ethers.getContractFactory("TimelockController");
   const lpMiningRewardsTimelock = await LPMiningRewardsTimelock.deploy(4 * time.day, [proposer], [executor]);
 
   await lpMiningRewardsTimelock.deployed();
-  console.log(` > LPMiningRewardsTimelock deployed to: ${lpMiningRewardsTimelock.address}`);
+  log(` > LPMiningRewardsTimelock deployed to: ${lpMiningRewardsTimelock.address}`);
   contracts.lpMiningRewardsTimelock = lpMiningRewardsTimelock;
+  addToTXList("deploying LPMiningRewardsTimelock with lock of 4 days", lpMiningRewardsTimelock.deployTransaction.hash);
 }
 
 async function deployPresale(ethers, contracts) {
@@ -46,7 +70,7 @@ async function deployPresale(ethers, contracts) {
     process.env.PRESALE_END_TIME);
 
   await presale.deployed();
-  console.log(` > Presale deployed to: ${presale.address}`);
+  log(` > Presale deployed to: ${presale.address}`);
   contracts.presale = presale;
 }
 
@@ -76,8 +100,9 @@ async function deployToken(ethers, contracts) {
   const kuStarterToken = await KuStarterToken.deploy(receivers, amounts, contracts.presale.address);
 
   await kuStarterToken.deployed();
-  console.log(` > KuStarterToken deployed to: ${kuStarterToken.address}`);
+  log(` > KuStarterToken deployed to: ${kuStarterToken.address}`);
   contracts.kuStarterToken = kuStarterToken;
+  addToTXList("deploying KuStarter Token", kuStarterToken.deployTransaction.hash);
 }
 
 async function deploySaleVesting(ethers, contracts) {
@@ -91,12 +116,13 @@ async function deploySaleVesting(ethers, contracts) {
   );
 
   await saleVesting.deployed();
-  console.log(` > SaleVesting deployed to: ${saleVesting.address}`);
+  log(` > SaleVesting deployed to: ${saleVesting.address}`);
   contracts.saleVesting = saleVesting;
 
   const balance = await contracts.kuStarterToken.balanceOf(saleTreasury.address);
   await (await contracts.kuStarterToken.connect(saleTreasury).approve(saleVesting.address, balance)).wait();
-  await saleVesting.connect(saleTreasury).deposit(balance);
+  const tx = await (await saleVesting.connect(saleTreasury).deposit(balance)).wait();
+  addToTXList("adding tokens to Sale Vesting contract", tx.transactionHash);
 }
 
 async function deployMarketingVesting(ethers, contracts) {
@@ -110,7 +136,7 @@ async function deployMarketingVesting(ethers, contracts) {
   );
 
   await marketingVesting.deployed();
-  console.log(` > MarketingVesting deployed to: ${marketingVesting.address}`);
+  log(` > MarketingVesting deployed to: ${marketingVesting.address}`);
   contracts.marketingVesting = marketingVesting;
 
   const balance = await contracts.kuStarterToken.balanceOf(marketingTreasury.address);
@@ -137,7 +163,8 @@ async function deployMarketingVesting(ethers, contracts) {
 
   const initials = Array(marketingAddresses.length).fill(0);
 
-  await marketingVesting.connect(marketingTreasury).submitMulti(marketingAddresses, ends, amounts, initials);
+  const tx = await(await marketingVesting.connect(marketingTreasury).submitMulti(marketingAddresses, ends, amounts, initials)).wait();
+  addToTXList("adding tokens to Marketing Vesting contract", tx.transactionHash);
 }
 
 async function deployDevelopmentVesting(ethers, contracts) {
@@ -151,14 +178,15 @@ async function deployDevelopmentVesting(ethers, contracts) {
   );
 
   await developmentVesting1.deployed();
-  console.log(` > DevelopmentVesting1 deployed to: ${developmentVesting1.address}`);
+  log(` > DevelopmentVesting1 deployed to: ${developmentVesting1.address}`);
   contracts.developmentVesting1 = developmentVesting1;
 
   const balance = parseEther("500000");
   await (await contracts.kuStarterToken.connect(developmentTreasury).approve(developmentVesting1.address, balance)).wait();
   await developmentVesting1.connect(developmentTreasury).deposit(balance);
 
-  await developmentVesting1.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_1_VESTING_END_TIME, balance, 0);
+  let tx = await (await developmentVesting1.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_1_VESTING_END_TIME, balance, 0)).wait();
+  addToTXList("adding tokens to Development Vesting 1 contract", tx.transactionHash);
 
   //DevelopmentVesting2 - 50%
   const DevelopmentVesting2 = await ethers.getContractFactory("TokenVesting");
@@ -170,13 +198,14 @@ async function deployDevelopmentVesting(ethers, contracts) {
   );
 
   await developmentVesting2.deployed();
-  console.log(` > DevelopmentVesting2 deployed to: ${developmentVesting2.address}`);
+  log(` > DevelopmentVesting2 deployed to: ${developmentVesting2.address}`);
   contracts.developmentVesting2 = developmentVesting2;
 
   await (await contracts.kuStarterToken.connect(developmentTreasury).approve(developmentVesting2.address, balance)).wait();
   await developmentVesting2.connect(developmentTreasury).deposit(balance);
 
-  await developmentVesting2.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_2_VESTING_END_TIME, balance, 0);
+  tx = await (await developmentVesting2.connect(developmentTreasury).submit(developmentTreasury.address, process.env.DEVELOPMENT_2_VESTING_END_TIME, balance, 0)).wait();
+  addToTXList("adding tokens to Development Vesting 2 contract", tx.transactionHash);
 }
 
 async function initializePresale(contracts) {
@@ -212,7 +241,7 @@ async function initializePresale(contracts) {
 
   const initials = Array(seedAddresses.length).fill(20);
 
-  const tx = await contracts.presale.initialize(
+  let tx = await contracts.presale.initialize(
     contracts.kuStarterToken.address,
     contracts.saleVesting.address,
     seedAddresses,
@@ -220,15 +249,20 @@ async function initializePresale(contracts) {
     amounts,
     initials
   );
-  await tx.wait(); // wait for it to be mined
+  tx = await tx.wait(); // wait for it to be mined
+  addToTXList("adding tokens to Development Vesting 2 contract", tx.transactionHash);
 }
 
 module.exports = async (args) => {
+  if(args.s) { // should log
+    shouldLog = false;
+  }
+
   const skipQuestions = args.y;
   if (skipQuestions) {
-    console.warn("You have passed --y, which means you will not be prompted for any confirmations! Giving you 3 seconds to kill me...");
+    warn("You have passed --y, which means you will not be prompted for any confirmations! Giving you 3 seconds to kill me...");
     await utils.sleep(3000);
-    console.warn("Time is up! Let's go!");
+    warn("Time is up! Let's go!");
   }
 
   // Please ensure to add environment variables that are needed here
@@ -252,7 +286,7 @@ module.exports = async (args) => {
     return;
   }
 
-  console.log(`Deploying on ${hre.network.name}...`);
+  log(`Deploying on ${hre.network.name}...`);
 
   [deployer, proposer, executor, saleTreasury, marketingTreasury, developmentTreasury] = await ethers.getSigners();
   proposer = proposer.address;
@@ -268,6 +302,10 @@ module.exports = async (args) => {
   await deployDevelopmentVesting(ethers, contracts);
   await initializePresale(contracts);
   await contracts.kuStarterToken.pause();
+
+  txs.forEach(tx => {
+    log(`Tx for ${tx.title} mined with hash ${explorerUrl}/${tx.txHash}`);
+  });
 
   return contracts;
 };
