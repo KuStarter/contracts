@@ -133,7 +133,7 @@ describe('Deployment of KUST', function () {
     });
 
     it('has tokens, but cannot send them', async function () {
-      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("400"));
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("380"));
 
       await expect(contracts.kuStarterToken.transfer(attacker.address, parseEther("1")))
         .to.be.revertedWith("ERC20Pausable: token transfer while paused");
@@ -162,11 +162,11 @@ describe('Deployment of KUST', function () {
     });
 
     it('now can send their tokens', async function () {
-      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("400"));
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("380"));
 
       await contracts.kuStarterToken.connect(user).transfer(attacker.address, parseEther("1"));
 
-      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("399"));
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("379"));
       expect(await contracts.kuStarterToken.balanceOf(attacker.address)).to.be.eq(parseEther("1"));
     });
 
@@ -206,9 +206,9 @@ describe('Deployment of KUST', function () {
       await time.increaseTime(time.week, 1);
       await time.increaseTime(time.day, 1);
 
-      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("399"));
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("379"));
       const available = await contracts.saleVesting.connect(user).getAvailable(user.address);
-      expect(available).to.be.gt(parseEther("20"));
+      expect(available).to.be.gt(parseEther("19"));
 
       const balance = await contracts.kuStarterToken.balanceOf(user.address);
       await contracts.saleVesting.connect(user).claimTokens(available)
