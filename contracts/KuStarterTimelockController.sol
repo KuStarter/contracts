@@ -4,10 +4,9 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 contract KuStarterTimelockController is TimelockController {
-
     constructor(
         uint256 minDelay,
         address[] memory proposers,
         address[] memory executors
-    ) TimelockController(minDelay, proposers, executors) { }
+    ) TimelockController(minDelay, proposers, executors) {}
 }
