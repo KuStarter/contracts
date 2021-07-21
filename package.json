@@ -6,6 +6,9 @@
   "scripts": {
     "deploy": "npx hardhat --network kucoin_mainnet deploy",
     "deploy:test": "npx hardhat --network kucoin_testnet deploy",
+    "flatten": "mkdir -p flattened; npx hardhat flatten contracts/Presale.sol > flattened/Presale.sol; npx hardhat flatten contracts/KuStarterToken.sol > flattened/KuStarterToken.sol; npx hardhat flatten contracts/KuStarterTimelockController.sol > flattened/KuStarterTimelockController.sol; npx hardhat flatten contracts/TokenVesting.sol > flattened/TokenVesting.sol;",
+    "liquidity": "npx hardhat --network kucoin_mainnet liquidity",
+    "liquidity:test": "npx hardhat --network kucoin_testnet liquidity",
     "test": "npx hardhat test",
     "whitelist": "npx hardhat --network kucoin_mainnet whitelist",
     "whitelist:test": "npx hardhat --network kucoin_testnet whitelist"

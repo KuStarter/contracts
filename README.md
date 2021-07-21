@@ -27,17 +27,17 @@ yarn run deploy
 
 #### Deployed Addresses
 
-| Contract | Contract address |
-|----------|------------------|
-| DAOFundTimelock          | TBC |
-| StakingRewardsTimelock     | TBC |
-| LPMiningRewardsTimelock    | TBC |
-| Presale                    | TBC | 
-| KuStarterToken             | TBC |
-| SaleVesting                | TBC |
-| MarketingVesting           | TBC |
-| DevelopmentVesting1        | TBC | 
-| DevelopmentVesting2        | TBC | 
+| Contract                   | Contract address |
+|----------------------------|------------------|
+| DAOFundTimelock            | [0xa0C5343f94BcF3324023Bb0bB27b164972d9fc0a](https://explorer.kcc.io/en/address/0xa0C5343f94BcF3324023Bb0bB27b164972d9fc0a) |
+| StakingRewardsTimelock     | [0x9b2195bFD2B37C44383786328dD865264F56A022](https://explorer.kcc.io/en/address/0x9b2195bFD2B37C44383786328dD865264F56A022) |
+| LPMiningRewardsTimelock    | [0x06a21B730c626A9E4F4966c107e74EE833Ac3C82](https://explorer.kcc.io/en/address/0x06a21B730c626A9E4F4966c107e74EE833Ac3C82) |
+| Presale                    | [0x5AcdeAe0b2CaaF6eA18a576048BBf13E0d2C8819](https://explorer.kcc.io/en/address/0x5AcdeAe0b2CaaF6eA18a576048BBf13E0d2C8819) |
+| KuStarterToken             | [0x204dFE63C672886b09Df4164F4d39c6Db87d10B1](https://explorer.kcc.io/en/address/0x204dFE63C672886b09Df4164F4d39c6Db87d10B1) |
+| SaleVesting                | [0x961A320b0367dfe6634C2e678cf94F7fb6b3267B](https://explorer.kcc.io/en/address/0x961A320b0367dfe6634C2e678cf94F7fb6b3267B) |
+| MarketingVesting           | [0xfb701b994C8FE2Ee20C7E158Ca9196778445051F](https://explorer.kcc.io/en/address/0xfb701b994C8FE2Ee20C7E158Ca9196778445051F) |
+| DevelopmentVesting1        | [0x95FA0cC58D376B6E50Ac4BA02f27a149Da33aAEF](https://explorer.kcc.io/en/address/0x95FA0cC58D376B6E50Ac4BA02f27a149Da33aAEF) |
+| DevelopmentVesting2        | [0x4482748Fec1F2Efb6Ab9d04c53cfa9cFa9f12Ffd](https://explorer.kcc.io/en/address/0x4482748Fec1F2Efb6Ab9d04c53cfa9cFa9f12Ffd) |
 
 
 ### Directory Structure
