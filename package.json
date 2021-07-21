@@ -4,6 +4,7 @@
   "description": "A new and innovative launchpad for projects on the KuCoin Community Chain",
   "main": "hardhat.config.js",
   "scripts": {
+    "multicall:deploy": "npx hardhat --network kucoin_mainnet multicall:deploy",
     "deploy": "npx hardhat --network kucoin_mainnet deploy",
     "deploy:test": "npx hardhat --network kucoin_testnet deploy",
     "test": "npx hardhat test",

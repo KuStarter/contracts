@@ -3,6 +3,7 @@ require("@nomiclabs/hardhat-waffle");
 const { task } = require('hardhat/config');
 const deploy = require('./scripts/deploy');
 const whitelist = require('./scripts/whitelist');
+const multicallDeploy = require("./scripts/deploy_multicall")
 
 task("deploy", "Deploys the contracts")
   .addFlag(
@@ -33,6 +34,10 @@ task("whitelist", "Add or remove addresses from the whitelist")
     "Skips any confirmations and automatically agrees to them. Use with caution!"
   )
   .setAction(whitelist);
+
+
+task("multicall:deploy", "Deploys the multicall")
+  .setAction(multicallDeploy);
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
