@@ -3,6 +3,7 @@ require("@nomiclabs/hardhat-waffle");
 const { task } = require('hardhat/config');
 const deploy = require('./scripts/deploy');
 const whitelist = require('./scripts/whitelist');
+const multicallDeploy = require("./scripts/deploy_multicall")
 const liquidity = require('./scripts/liquidity');
 
 task("deploy", "Deploys the contracts")
@@ -35,7 +36,6 @@ task("whitelist", "Add or remove addresses from the whitelist")
   )
   .setAction(whitelist);
 
-
 task("liquidity", "Add liquidity from Presale")
   .addPositionalParam(
     "amount",
@@ -49,6 +49,12 @@ task("liquidity", "Add liquidity from Presale")
   )
   .setAction(liquidity);
 
+
+task("multicall:deploy", "Deploys the multicall")
+  .setAction(multicallDeploy);
+
+
+  
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */

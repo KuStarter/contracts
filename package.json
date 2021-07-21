@@ -4,6 +4,7 @@
   "description": "A new and innovative launchpad for projects on the KuCoin Community Chain",
   "main": "hardhat.config.js",
   "scripts": {
+    "multicall:deploy": "npx hardhat --network kucoin_mainnet multicall:deploy",
     "deploy": "npx hardhat --network kucoin_mainnet deploy",
     "deploy:test": "npx hardhat --network kucoin_testnet deploy",
     "flatten": "mkdir -p flattened; npx hardhat flatten contracts/Presale.sol > flattened/Presale.sol; npx hardhat flatten contracts/KuStarterToken.sol > flattened/KuStarterToken.sol; npx hardhat flatten contracts/KuStarterTimelockController.sol > flattened/KuStarterTimelockController.sol; npx hardhat flatten contracts/TokenVesting.sol > flattened/TokenVesting.sol;",
