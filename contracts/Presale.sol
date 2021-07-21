@@ -7,8 +7,6 @@ import "./interfaces/IKoffeeSwapRouter.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "hardhat/console.sol";
-
 contract Presale is Ownable {
     event Deposited(address indexed user, uint256 amount);
     event Recovered(address token, uint256 amount);
@@ -175,8 +173,7 @@ contract Presale is Ownable {
         treasury.transfer(address(this).balance);
     }
 
-    // TODO: Should we allow owner to input amountTokenDesired?
-    function addLiquidity() external onlyOwner {
+    function addLiquidity(uint256 amountTokenDesired) external onlyOwner {
         require(
             block.timestamp >= presaleEndTimestamp ||
                 totalDepositedEthBalance >= hardCapKcsAmount,
@@ -191,8 +188,6 @@ contract Presale is Ownable {
         uint256 liquidityEth = address(this).balance / 2;
 
         treasury.transfer(liquidityEth);
-
-        uint256 amountTokenDesired = KuStarter.balanceOf(address(this));
 
         KuStarter.approve(address(koffeeswap), amountTokenDesired);
         koffeeswap.addLiquidityKCS{value: (liquidityEth)}(

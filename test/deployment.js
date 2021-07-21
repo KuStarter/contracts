@@ -140,23 +140,25 @@ describe('Deployment of KUST', function () {
     });
 
     it('liquidity cannot be added until presale is over', async function () {
-      await expect(contracts.presale.addLiquidity())
+      await expect(contracts.presale.addLiquidity(1))
         .to.be.revertedWith("Presale is still active");
     });
 
     it('presale will end and liquidity can be added', async function () {
       await time.increaseTime(time.hour, 24);
 
-      await expect(contracts.presale.connect(attacker).addLiquidity())
+      const liq = await contracts.kuStarterToken.balanceOf(contracts.presale.address);
+
+      await expect(contracts.presale.connect(attacker).addLiquidity(liq))
         .to.be.revertedWith("Ownable: caller is not the owner");
 
       const bal = await saleTreasury.getBalance();
-      await contracts.presale.addLiquidity();
+      await contracts.presale.addLiquidity(liq);
       expect(await saleTreasury.getBalance()).to.be.eq(bal.add(parseEther("25")));
     });
 
     it('liquidity cannot be added twice', async function () {
-      await expect(contracts.presale.addLiquidity()).to.be.revertedWith("Presale is already completed");
+      await expect(contracts.presale.addLiquidity(1)).to.be.revertedWith("Presale is already completed");
     });
 
     it('now can send their tokens', async function () {
