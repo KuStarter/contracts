@@ -9,6 +9,10 @@ task("deploy", "Deploys the contracts")
     "y",
     "Skips any confirmations and automatically agrees to them. Use with caution!"
   )
+  .addFlag(
+    "s",
+    "Silences stdout"
+  )
   .setAction(deploy);
 
 task("whitelist", "Add or remove addresses from the whitelist")

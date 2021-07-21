@@ -16,7 +16,7 @@ Copy `.env.example` to `.env` and fill it as required.
 
 ```
 yarn install
-yarn test
+yarn run test
 ```
 
 ### Deploy Contracts
@@ -48,6 +48,7 @@ yarn run deploy
     │   └── test                # Contracts only used for tests, never deployed to production
     ├── scripts                 # Hardhat scripts (e.g. deployments)
     ├── test                    # Automated tests
+    ├── utls                    # Miscellaneous utility files
     ├── .env.example            # env vars
     ├── .nvmrc                  # used by nvm to easily use required node version
     ├── hardhat.config.js       # Hardhat config with KCC networks setup
@@ -55,3 +56,6 @@ yarn run deploy
     ├── package.json            # The usual for Yarn
     └── README.md
 
+#### Koffeeswap Resources
+
+`utils/KoffeeSwapRouter.abi.json` taken from https://github.com/KoffeeSwap/koffeeswap-contracts as there is no NPM package

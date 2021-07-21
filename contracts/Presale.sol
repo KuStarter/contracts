@@ -7,10 +7,7 @@ import "./interfaces/IKoffeeSwapRouter.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "hardhat/console.sol";
-
 contract Presale is Ownable {
-
     event Deposited(address indexed user, uint256 amount);
     event Recovered(address token, uint256 amount);
 
@@ -134,9 +131,14 @@ contract Presale is Ownable {
         );
 
         uint256 tokenAmount = msg.value * tokensPerKcs;
-      
+
         KuStarter.unpause();
-        vesting.submit(_msgSender(), block.timestamp + 24 weeks, tokenAmount, 20);
+        vesting.submit(
+            _msgSender(),
+            block.timestamp + 24 weeks,
+            tokenAmount,
+            20
+        );
         KuStarter.pause();
 
         totalDepositedEthBalance = totalDepositedEthBalance + (msg.value);
@@ -171,12 +173,13 @@ contract Presale is Ownable {
         treasury.transfer(address(this).balance);
     }
 
-    function addLiquidity() external onlyOwner {
+    function addLiquidity(uint256 amountTokenDesired) external onlyOwner {
         require(
             block.timestamp >= presaleEndTimestamp ||
                 totalDepositedEthBalance >= hardCapKcsAmount,
             "Presale is still active"
         );
+        require(lock == 0, "Presale is already completed");
 
         // Set liquidity lock to now, this will be checked in recoverERC20 and also used for making sure the sale is over
         lock = block.timestamp;
@@ -186,8 +189,6 @@ contract Presale is Ownable {
 
         treasury.transfer(liquidityEth);
 
-        uint256 amountTokenDesired = KuStarter.balanceOf(address(this));
-
         KuStarter.approve(address(koffeeswap), amountTokenDesired);
         koffeeswap.addLiquidityKCS{value: (liquidityEth)}(
             address(KuStarter),
@@ -195,7 +196,7 @@ contract Presale is Ownable {
             amountTokenDesired,
             liquidityEth,
             address(this),
-            block.timestamp + 2 hours
+            block.timestamp + 60
         );
     }
 

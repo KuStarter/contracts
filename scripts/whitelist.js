@@ -5,6 +5,20 @@ const yesno = require("yesno");
 
 const utils = require("../utils");
 
+let shouldLog = true;
+
+function log(message) {
+  if(shouldLog) {
+    console.log(message);
+  }
+}
+
+function warn(message) {
+  if(shouldLog) {
+    console.warn(message);
+  }
+}
+
 async function getAddresses(file) {
   const fileStream = fs.createReadStream(file);
 
@@ -25,11 +39,15 @@ async function getAddresses(file) {
 }
 
 module.exports = async (args) => {
+  if(args.s) { // should log
+    shouldLog = false;
+  }
+
   const skipQuestions = args.y;
   if (skipQuestions) {
-    console.warn("You have passed --y, which means you will not be prompted for any confirmations! Giving you 3 seconds to kill me...");
+    warn("You have passed --y, which means you will not be prompted for any confirmations! Giving you 3 seconds to kill me...");
     await utils.sleep(3000);
-    console.warn("Time is up! Let's go!");
+    warn("Time is up! Let's go!");
   }
 
   // Please ensure to add environment variables that are needed here
@@ -48,8 +66,8 @@ module.exports = async (args) => {
 
   const addresses = await getAddresses(args.file);
 
-  console.log("Found addresses:");
-  console.log(addresses);
+  log("Found addresses:");
+  log(addresses);
 
   [deployer] = await ethers.getSigners();
 
@@ -70,5 +88,5 @@ module.exports = async (args) => {
     verb = "removed";
   }
 
-  console.log(`Successfully ${verb} addresses.`);
+  log(`Successfully ${verb} addresses.`);
 };
