@@ -289,6 +289,14 @@ module.exports = async (args) => {
     return;
   }
 
+  log("PRESALE_START_TIME = " + new Date(process.env.PRESALE_START_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("PRESALE_END_TIME = " + new Date(process.env.PRESALE_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("VESTING_START_TIME = " + new Date(process.env.VESTING_START_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("SEED_VESTING_END_TIME = " + new Date(process.env.SEED_VESTING_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("MARKETING_VESTING_END_TIME = " + new Date(process.env.MARKETING_VESTING_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("DEVELOPMENT_1_VESTING_END_TIME = " + new Date(process.env.DEVELOPMENT_1_VESTING_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("DEVELOPMENT_2_VESTING_END_TIME = " + new Date(process.env.DEVELOPMENT_2_VESTING_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+
   let ok = skipQuestions ? true : await yesno({ question: `Are you sure you want to deploy on ${hre.network.name} (y/n)?` });
   if (!ok) {
     console.error("Quitting.");

@@ -135,7 +135,7 @@ contract Presale is Ownable {
         KuStarter.unpause();
         vesting.submit(
             _msgSender(),
-            block.timestamp + 24 weeks,
+            presaleStartTimestamp + 24 weeks,
             tokenAmount,
             20
         );
