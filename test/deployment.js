@@ -51,7 +51,10 @@ describe('Deployment of KUST', function () {
       contracts.developmentVesting1.address,
       contracts.developmentVesting2.address,
       contracts.presale.address,
-      saleTreasury.address
+      saleTreasury.address,
+      "0x3049B83eDc77dDae90c709F7677bd6D2dBb821ED",
+      "0xa48b95196E8e75C3350e5997333D76f7fa89803b",
+      "0x06e045b036E4EDAB1C2497F1f828d932882f0E44"
     ];
 
     const amounts = [
@@ -63,11 +66,27 @@ describe('Deployment of KUST', function () {
       parseEther("500000"),
       parseEther("225000"),
       "0",
+      "0",
+      parseEther("10000"),
+      parseEther("1000")
     ];
 
     for (let i = 0; i < addresses.length; i++) {
       expect(await contracts.kuStarterToken.balanceOf(addresses[i])).to.be.eq(amounts[i]);
     }
+  });
+
+  it('has tokens, but cannot send them', async function () {
+    expect(await contracts.kuStarterToken.balanceOf("0x06e045b036E4EDAB1C2497F1f828d932882f0E44")).to.be.eq(parseEther("1000"));
+
+    await ethers.provider.send("hardhat_impersonateAccount", ["0x06e045b036E4EDAB1C2497F1f828d932882f0E44"]);
+
+    const investor = await ethers.getSigner("0x06e045b036E4EDAB1C2497F1f828d932882f0E44");
+
+    await expect(contracts.kuStarterToken.connect(investor).transfer(attacker.address, parseEther("1")))
+      .to.be.revertedWith("ERC20Pausable: token transfer while paused");
+
+    await ethers.provider.send("hardhat_stopImpersonatingAccount", ["0x06e045b036E4EDAB1C2497F1f828d932882f0E44"]);
   });
 
   it('user not yet whitelisted', async function () {
@@ -133,7 +152,7 @@ describe('Deployment of KUST', function () {
     });
 
     it('has tokens, but cannot send them', async function () {
-      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("400"));
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("380"));
 
       await expect(contracts.kuStarterToken.transfer(attacker.address, parseEther("1")))
         .to.be.revertedWith("ERC20Pausable: token transfer while paused");
@@ -162,11 +181,11 @@ describe('Deployment of KUST', function () {
     });
 
     it('now can send their tokens', async function () {
-      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("400"));
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("380"));
 
       await contracts.kuStarterToken.connect(user).transfer(attacker.address, parseEther("1"));
 
-      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("399"));
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("379"));
       expect(await contracts.kuStarterToken.balanceOf(attacker.address)).to.be.eq(parseEther("1"));
     });
 
@@ -206,9 +225,9 @@ describe('Deployment of KUST', function () {
       await time.increaseTime(time.week, 1);
       await time.increaseTime(time.day, 1);
 
-      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("399"));
+      expect(await contracts.kuStarterToken.balanceOf(user.address)).to.be.eq(parseEther("379"));
       const available = await contracts.saleVesting.connect(user).getAvailable(user.address);
-      expect(available).to.be.gt(parseEther("20"));
+      expect(available).to.be.gt(parseEther("19"));
 
       const balance = await contracts.kuStarterToken.balanceOf(user.address);
       await contracts.saleVesting.connect(user).claimTokens(available)

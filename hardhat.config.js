@@ -4,6 +4,7 @@ const { task } = require('hardhat/config');
 const deploy = require('./scripts/deploy');
 const whitelist = require('./scripts/whitelist');
 const multicallDeploy = require("./scripts/deploy_multicall")
+const liquidity = require('./scripts/liquidity');
 
 task("deploy", "Deploys the contracts")
   .addFlag(
@@ -35,10 +36,25 @@ task("whitelist", "Add or remove addresses from the whitelist")
   )
   .setAction(whitelist);
 
+task("liquidity", "Add liquidity from Presale")
+  .addPositionalParam(
+    "amount",
+    "Amount of tokens to add to liquidity",
+    undefined,
+    types.string
+  )
+  .addFlag(
+    "y",
+    "Skips any confirmations and automatically agrees to them. Use with caution!"
+  )
+  .setAction(liquidity);
+
 
 task("multicall:deploy", "Deploys the multicall")
   .setAction(multicallDeploy);
 
+
+  
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -66,7 +82,7 @@ module.exports = {
       accounts: {
         mnemonic: process.env.SEED_PHRASE
       },
-      gasPrice: 5000000000 // 5 gwei
+      gasPrice: 3000000000 // 3 gwei
     },
     kucoin_testnet: {
       url: 'https://rpc-testnet.kcc.network',

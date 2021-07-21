@@ -26,10 +26,9 @@ function warn(message) {
   }
 }
 
-async function deployTimelocks(ethers, contracts) {
-  const time = new (require("../utils/time"))(ethers);
+async function deployTimelocks(ethers, contracts, time) {
   // DAOFundTimelock
-  const DAOFundTimelock = await ethers.getContractFactory("TimelockController");
+  const DAOFundTimelock = await ethers.getContractFactory("KuStarterTimelockController");
   const daoFundTimelock = await DAOFundTimelock.deploy(time.week, [proposer], [executor]);
 
   await daoFundTimelock.deployed();
@@ -38,7 +37,7 @@ async function deployTimelocks(ethers, contracts) {
   addToTXList("deploying DAOFundTimelock with lock of 7 days", daoFundTimelock.deployTransaction.hash);
 
   // StakingRewardsTimelock
-  const StakingRewardsTimelock = await ethers.getContractFactory("TimelockController");
+  const StakingRewardsTimelock = await ethers.getContractFactory("KuStarterTimelockController");
   const stakingRewardsTimelock = await StakingRewardsTimelock.deploy(4 * time.day, [proposer], [executor]);
 
   await stakingRewardsTimelock.deployed();
@@ -47,7 +46,7 @@ async function deployTimelocks(ethers, contracts) {
   addToTXList("deploying StakingRewardsTimelock with lock of 4 days", stakingRewardsTimelock.deployTransaction.hash);
 
   // LPMiningRewardsTimelock
-  const LPMiningRewardsTimelock = await ethers.getContractFactory("TimelockController");
+  const LPMiningRewardsTimelock = await ethers.getContractFactory("KuStarterTimelockController");
   const lpMiningRewardsTimelock = await LPMiningRewardsTimelock.deploy(4 * time.day, [proposer], [executor]);
 
   await lpMiningRewardsTimelock.deployed();
@@ -57,15 +56,15 @@ async function deployTimelocks(ethers, contracts) {
 }
 
 async function deployPresale(ethers, contracts) {
-  // Presale - below figures represent a price of 10 USD / KCS
-  // TODO: Check below figures
+  // Presale - below figures represent a price of 9.50 USD / KCS
+  // Price as of July 21, 2021 @ 12:29 UTC
   const Presale = await ethers.getContractFactory("Presale");
   const presale = await Presale.deploy(
     saleTreasury.address,
-    40,
-    parseEther("10000"),
+    38,
+    parseEther("10526.3157895"),
     parseEther("25"),
-    parseEther("50"),
+    parseEther("52.6315789474"),
     process.env.PRESALE_START_TIME,
     process.env.PRESALE_END_TIME);
 
@@ -265,6 +264,16 @@ module.exports = async (args) => {
     warn("Time is up! Let's go!");
   }
 
+  const time = new (require("../utils/time"))(ethers);
+
+  const presaleStartTime = parseInt(process.env.PRESALE_START_TIME);
+  process.env.PRESALE_END_TIME = (presaleStartTime + time.day).toString();
+  process.env.VESTING_START_TIME = (presaleStartTime + 2 * time.week).toString();
+  process.env.SEED_VESTING_END_TIME = (presaleStartTime + 36 * time.week).toString();
+  process.env.MARKETING_VESTING_END_TIME = (presaleStartTime + 12 * time.week).toString();
+  process.env.DEVELOPMENT_1_VESTING_END_TIME = (presaleStartTime + 12 * time.week).toString();
+  process.env.DEVELOPMENT_2_VESTING_END_TIME = (presaleStartTime + 52 * time.week).toString();
+
   // Please ensure to add environment variables that are needed here
   const envVarsSet = utils.checkEnvVars(
     "PRESALE_START_TIME",
@@ -280,6 +289,14 @@ module.exports = async (args) => {
     return;
   }
 
+  log("PRESALE_START_TIME = " + new Date(process.env.PRESALE_START_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("PRESALE_END_TIME = " + new Date(process.env.PRESALE_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("VESTING_START_TIME = " + new Date(process.env.VESTING_START_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("SEED_VESTING_END_TIME = " + new Date(process.env.SEED_VESTING_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("MARKETING_VESTING_END_TIME = " + new Date(process.env.MARKETING_VESTING_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("DEVELOPMENT_1_VESTING_END_TIME = " + new Date(process.env.DEVELOPMENT_1_VESTING_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+  log("DEVELOPMENT_2_VESTING_END_TIME = " + new Date(process.env.DEVELOPMENT_2_VESTING_END_TIME*1000).toLocaleString("en-GB", {timeZone: "utc"}));
+
   let ok = skipQuestions ? true : await yesno({ question: `Are you sure you want to deploy on ${hre.network.name} (y/n)?` });
   if (!ok) {
     console.error("Quitting.");
@@ -294,7 +311,7 @@ module.exports = async (args) => {
 
   const contracts = {};
 
-  await deployTimelocks(ethers, contracts);
+  await deployTimelocks(ethers, contracts, time);
   await deployPresale(ethers, contracts);
   await deployToken(ethers, contracts);
   await deploySaleVesting(ethers, contracts);
