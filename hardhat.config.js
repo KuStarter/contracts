@@ -76,7 +76,7 @@ module.exports = {
       accounts: {
         mnemonic: process.env.SEED_PHRASE
       },
-      gasPrice: 5000000000 // 5 gwei
+      gasPrice: 3000000000 // 3 gwei
     },
     kucoin_testnet: {
       url: 'https://rpc-testnet.kcc.network',
