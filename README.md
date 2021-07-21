@@ -29,26 +29,26 @@ yarn run deploy
 
 | Contract                   | Contract address |
 |----------------------------|------------------|
-| DAOFundTimelock            | [0xa0C5343f94BcF3324023Bb0bB27b164972d9fc0a](https://explorer.kcc.io/en/address/0xa0C5343f94BcF3324023Bb0bB27b164972d9fc0a) |
-| StakingRewardsTimelock     | [0x9b2195bFD2B37C44383786328dD865264F56A022](https://explorer.kcc.io/en/address/0x9b2195bFD2B37C44383786328dD865264F56A022) |
-| LPMiningRewardsTimelock    | [0x06a21B730c626A9E4F4966c107e74EE833Ac3C82](https://explorer.kcc.io/en/address/0x06a21B730c626A9E4F4966c107e74EE833Ac3C82) |
-| Presale                    | [0x5AcdeAe0b2CaaF6eA18a576048BBf13E0d2C8819](https://explorer.kcc.io/en/address/0x5AcdeAe0b2CaaF6eA18a576048BBf13E0d2C8819) |
-| KuStarterToken             | [0x204dFE63C672886b09Df4164F4d39c6Db87d10B1](https://explorer.kcc.io/en/address/0x204dFE63C672886b09Df4164F4d39c6Db87d10B1) |
-| SaleVesting                | [0x961A320b0367dfe6634C2e678cf94F7fb6b3267B](https://explorer.kcc.io/en/address/0x961A320b0367dfe6634C2e678cf94F7fb6b3267B) |
-| MarketingVesting           | [0xfb701b994C8FE2Ee20C7E158Ca9196778445051F](https://explorer.kcc.io/en/address/0xfb701b994C8FE2Ee20C7E158Ca9196778445051F) |
-| DevelopmentVesting1        | [0x95FA0cC58D376B6E50Ac4BA02f27a149Da33aAEF](https://explorer.kcc.io/en/address/0x95FA0cC58D376B6E50Ac4BA02f27a149Da33aAEF) |
-| DevelopmentVesting2        | [0x4482748Fec1F2Efb6Ab9d04c53cfa9cFa9f12Ffd](https://explorer.kcc.io/en/address/0x4482748Fec1F2Efb6Ab9d04c53cfa9cFa9f12Ffd) |
+| DAOFundTimelock            | [0xE7c23814688588f24fc6C2EfB3035ac3f063f428](https://explorer.kcc.io/en/address/0xE7c23814688588f24fc6C2EfB3035ac3f063f428) |
+| StakingRewardsTimelock     | [0x1cEc6dF31A92518c9158cF34Ea3165bC833F9aef](https://explorer.kcc.io/en/address/0x1cEc6dF31A92518c9158cF34Ea3165bC833F9aef) |
+| LPMiningRewardsTimelock    | [0xe5E8a5b16995e863A388B85179a97aaB555eeEB8](https://explorer.kcc.io/en/address/0xe5E8a5b16995e863A388B85179a97aaB555eeEB8) |
+| Presale                    | [0xaf38a208A4A69D01830f28e4D20cBfd4CB348874](https://explorer.kcc.io/en/address/0xaf38a208A4A69D01830f28e4D20cBfd4CB348874) |
+| KuStarterToken             | [0xfC56A7E70F6c970538020cc39939929b4d393F1F](https://explorer.kcc.io/en/address/0xfC56A7E70F6c970538020cc39939929b4d393F1F) |
+| SaleVesting                | [0x3284B8D9de9E086666E18774436563803A8eB092](https://explorer.kcc.io/en/address/0x3284B8D9de9E086666E18774436563803A8eB092) |
+| MarketingVesting           | [0xA9Dd371e282BE572426bDca50F16854Fe41b2983](https://explorer.kcc.io/en/address/0xA9Dd371e282BE572426bDca50F16854Fe41b2983) |
+| DevelopmentVesting1        | [0x6549B81Fd6ed83Bb12f072EC4ddBA1233f0d143b](https://explorer.kcc.io/en/address/0x6549B81Fd6ed83Bb12f072EC4ddBA1233f0d143b) |
+| DevelopmentVesting2        | [0x3285b13Da0FEf2Df24bB46c0Dc25Ce92e453e226](https://explorer.kcc.io/en/address/0x3285b13Da0FEf2Df24bB46c0Dc25Ce92e453e226) |
 
 **Important Transactions**:
- - Tx for deploying DAOFundTimelock with lock of 7 days mined with hash https://explorer.kcc.io/en/tx/0xbc0396ea61d9a28bb3ab1a7edc717fbd3e01ff5dea9029f08f62c255d3b7bfc0
- - Tx for deploying StakingRewardsTimelock with lock of 4 days mined with hash https://explorer.kcc.io/en/tx/0x9125706e6fe0401a57f954b781ed3cb9da0ad87eb4c1a9721058b94fbaff95f8
- - Tx for deploying LPMiningRewardsTimelock with lock of 4 days mined with hash https://explorer.kcc.io/en/tx/0x5139e9304972f65a643f51e912ab3dc171c9dcc35a9d794881f642c428b1292b
- - Tx for deploying KuStarter Token mined with hash https://explorer.kcc.io/en/tx/0xdfd295fcfe48f2a2b1299cb626323bb14a46585c99403cadf924c156d4938255
- - Tx for adding tokens to Sale Vesting contract mined with hash https://explorer.kcc.io/en/tx/0x95640340d001969c0d6c66e23875077a8a75d98b38de34a5e1574cd2a2f4c751
- - Tx for adding tokens to Marketing Vesting contract mined with hash https://explorer.kcc.io/en/tx/0xd0730990ae5d296ba5a5e9903eb6631a0ec6aceb19e104b840a33e0e764ccf69
- - Tx for adding tokens to Development Vesting 1 contract mined with hash https://explorer.kcc.io/en/tx/0xff9dd3f62de25056f5dc0c16ca66fa85af5b2a737bb616d0077d039c474ca4f9
- - Tx for adding tokens to Development Vesting 2 contract mined with hash https://explorer.kcc.io/en/tx/0x90e3e6e2b1eb3ad96905e37da6d737519c4aa0440371b92a6eaf4c2ef2d91d69
- - Tx for adding tokens to Development Vesting 2 contract mined with hash https://explorer.kcc.io/en/tx/0x6b80212208753ab03a03efd347ac6292e3b2a21bc21f95486d79bfa73170df3b
+ - Tx for deploying DAOFundTimelock with lock of 7 days mined with hash https://explorer.kcc.io/en/tx/0x0be529322c43c61f12f9d6517a6252e7db05351a9583fc08242a11e037f01678
+ - Tx for deploying StakingRewardsTimelock with lock of 4 days mined with hash https://explorer.kcc.io/en/tx/0xc6bf73dfea3b580c22339a822fa8e6a98714d0c3251ecac9727d0704ebc78187
+ - Tx for deploying LPMiningRewardsTimelock with lock of 4 days mined with hash https://explorer.kcc.io/en/tx/0xb611814f89aab38862ab6646687c089894caa258e3486d42453b5ca8ad30fee5
+ - Tx for deploying KuStarter Token mined with hash https://explorer.kcc.io/en/tx/0x0c727527aabd2feae808b86c7e19b9d482a54bb05d20af7e3e9df1d300dbb8f4
+ - Tx for adding tokens to Sale Vesting contract mined with hash https://explorer.kcc.io/en/tx/0xed505c434a6a4a527243a13c44166c0b4b23fc63198ac2bab9b00823199e0f88
+ - Tx for adding tokens to Marketing Vesting contract mined with hash https://explorer.kcc.io/en/tx/0xe26b72eb4966d57897dfcb87e5bd83484177473a8b4cd8e662d275b5ffd0714e
+ - Tx for adding tokens to Development Vesting 1 contract mined with hash https://explorer.kcc.io/en/tx/0x159edec3ffa29aaf6e8a15ae91916a3053fc1e6d979fcd790d95155534d3924a
+ - Tx for adding tokens to Development Vesting 2 contract mined with hash https://explorer.kcc.io/en/tx/0xaa093751afe47fdd740c8617559f2cf06b1d776e60d01939983eb6e3b00c00fe
+ - Tx for adding tokens to Development Vesting 2 contract mined with hash https://explorer.kcc.io/en/tx/0x8c9f27b2761ccdd279e28b5d011eba26355e3f8407170283e2f2f43bb663c16d
 
 ### Directory Structure
 

@@ -173,7 +173,7 @@ describe('Deployment of KUST', function () {
 
       const bal = await saleTreasury.getBalance();
       await contracts.presale.addLiquidity(liq);
-      expect(await saleTreasury.getBalance()).to.be.eq(bal.add(parseEther("25")));
+      expect(await saleTreasury.getBalance()).to.be.eq(bal.add(parseEther("10")));
     });
 
     it('liquidity cannot be added twice', async function () {

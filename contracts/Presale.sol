@@ -185,9 +185,11 @@ contract Presale is Ownable {
         lock = block.timestamp;
         KuStarter.removePauser();
 
-        uint256 liquidityEth = address(this).balance / 2;
+        uint256 treasuryAmount = address(this).balance / 5;
 
-        treasury.transfer(liquidityEth);
+        treasury.transfer(treasuryAmount);
+
+        uint256 liquidityEth = address(this).balance;
 
         KuStarter.approve(address(koffeeswap), amountTokenDesired);
         koffeeswap.addLiquidityKCS{value: (liquidityEth)}(
