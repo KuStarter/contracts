@@ -249,7 +249,7 @@ async function initializePresale(contracts) {
     initials
   );
   tx = await tx.wait(); // wait for it to be mined
-  addToTXList("adding tokens to Development Vesting 2 contract", tx.transactionHash);
+  addToTXList("initializing Presale contract", tx.transactionHash);
 }
 
 module.exports = async (args) => {

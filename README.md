@@ -48,7 +48,7 @@ yarn run deploy
  - Tx for adding tokens to Marketing Vesting contract mined with hash https://explorer.kcc.io/en/tx/0xe26b72eb4966d57897dfcb87e5bd83484177473a8b4cd8e662d275b5ffd0714e
  - Tx for adding tokens to Development Vesting 1 contract mined with hash https://explorer.kcc.io/en/tx/0x159edec3ffa29aaf6e8a15ae91916a3053fc1e6d979fcd790d95155534d3924a
  - Tx for adding tokens to Development Vesting 2 contract mined with hash https://explorer.kcc.io/en/tx/0xaa093751afe47fdd740c8617559f2cf06b1d776e60d01939983eb6e3b00c00fe
- - Tx for adding tokens to Development Vesting 2 contract mined with hash https://explorer.kcc.io/en/tx/0x8c9f27b2761ccdd279e28b5d011eba26355e3f8407170283e2f2f43bb663c16d
+ - Tx for initializing Presale contract mined with hash https://explorer.kcc.io/en/tx/0x8c9f27b2761ccdd279e28b5d011eba26355e3f8407170283e2f2f43bb663c16d
 
 ### Directory Structure
 
